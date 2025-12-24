@@ -2,28 +2,27 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JSON Content Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Content Editor Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
-            --bg-primary: #1e1e1e;
-            --bg-secondary: #252526;
-            --bg-tertiary: #2d2d30;
-            --bg-hover: #37373d;
-            --bg-input: #3c3c3c;
-            --border: #3e3e42;
-            --border-active: #007acc;
-            --text-primary: #cccccc;
-            --text-secondary: #999999;
-            --text-muted: #6a6a6a;
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #242424;
+            --bg-tertiary: #2a2a2a;
+            --bg-hover: #333333;
+            --bg-input: #2d2d2d;
+            --border: #3a3a3a;
+            --border-active: #0078d4;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --text-muted: #707070;
             
             --color-h2: #4ec9b0;
             --color-h3: #569cd6;
@@ -34,25 +33,27 @@
             --color-info: #dcdcaa;
             --color-list: #d7ba7d;
             --color-quote: #6a9955;
-            --color-expandable: #c586c0;
-            
-            --success: #4ec9b0;
-            --warning: #fbbf24;
-            --error: #f87171;
+            --color-steps: #c586c0;
+
+            /* JSON Syntax Colors */
+            --json-key: #9cdcfe;
+            --json-string: #ce9178;
+            --json-number: #b5cea8;
+            --json-boolean: #569cd6;
+            --json-null: #808080;
+            --json-bracket: #ffd700;
         }
 
         html, body {
             height: 100%;
             overflow: hidden;
-            position: fixed;
-            width: 100%;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
         }
 
         ::-webkit-scrollbar {
@@ -65,44 +66,42 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #424242;
+            background: #404040;
             border-radius: 3px;
         }
 
-        /* ==================== APP STRUCTURE ==================== */
+        /* ==================== LAYOUT ==================== */
         .app {
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh; /* Dynamic viewport height for mobile */
-            overflow: hidden;
         }
 
-        .app-header {
+        .toolbar {
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border);
-            padding: 6px 10px;
+            padding: 4px 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 32px;
             flex-shrink: 0;
-            min-height: 44px;
         }
 
-        .header-title {
+        .toolbar-brand {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
         }
 
-        .header-title i {
+        .toolbar-brand i {
             color: var(--border-active);
-            font-size: 16px;
+            font-size: 13px;
         }
 
-        .header-actions {
+        .toolbar-actions {
             display: flex;
             gap: 4px;
         }
@@ -111,20 +110,18 @@
             background: var(--bg-input);
             color: var(--text-primary);
             border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 5px 8px;
-            font-size: 11px;
+            border-radius: 2px;
+            padding: 3px 6px;
+            font-size: 10px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            white-space: nowrap;
-            transition: background 0.15s;
+            transition: all 0.15s;
         }
 
-        .btn:active {
+        .btn:hover {
             background: var(--bg-hover);
-            transform: scale(0.97);
         }
 
         .btn-primary {
@@ -132,169 +129,120 @@
             border-color: var(--border-active);
         }
 
-        .app-body {
+        .btn-icon {
+            padding: 3px 5px;
+        }
+
+        .workspace {
             display: flex;
-            flex-direction: column;
             flex: 1;
             overflow: hidden;
             position: relative;
         }
 
-        /* ==================== SIDEBAR ==================== */
-        .sidebar {
+        /* ==================== RESIZABLE PANELS ==================== */
+        .panel {
             background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            height: 35vh;
-            min-height: 200px;
-            max-height: 40vh;
+            position: relative;
         }
 
-        .sidebar-header {
+        .panel-templates {
+            width: 180px;
+            min-width: 100px;
+            border-right: 1px solid var(--border);
+        }
+
+        .panel-tree {
+            width: 280px;
+            min-width: 150px;
+            border-right: 1px solid var(--border);
+        }
+
+        .panel-editor {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            background: transparent;
+            z-index: 10;
+            transition: background 0.15s;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.active {
+            background: var(--border-active);
+        }
+
+        .resize-handle-right {
+            right: -2px;
+        }
+
+        /* ==================== PANEL COMPONENTS ==================== */
+        .panel-header {
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border);
-            padding: 6px 10px;
+            padding: 4px 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-secondary);
             font-weight: 600;
+            height: 24px;
             flex-shrink: 0;
         }
 
-        .badge {
-            background: var(--bg-input);
-            padding: 1px 6px;
-            border-radius: 8px;
-            font-size: 9px;
-        }
-
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 3px;
-            padding: 6px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .quick-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            padding: 8px 2px;
-            cursor: pointer;
-            border-radius: 3px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            font-size: 14px;
-            transition: all 0.15s;
-        }
-
-        .quick-btn:active {
-            background: var(--bg-hover);
-            transform: scale(0.95);
-        }
-
-        .quick-label {
-            font-size: 8px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .sidebar-content {
+        .panel-content {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
-            padding: 6px;
-            -webkit-overflow-scrolling: touch;
+            padding: 4px;
         }
 
         /* ==================== TREE ==================== */
-        .tree-section {
-            margin-bottom: 6px;
-        }
-
-        .section-header {
-            padding: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            border-left: 3px solid transparent;
-            user-select: none;
-            transition: background 0.15s;
-        }
-
-        .section-header:active {
-            background: var(--bg-hover);
-        }
-
-        .section-header.active {
-            background: var(--bg-hover);
-            border-right: 2px solid var(--border-active);
-        }
-
-        .chevron {
-            font-size: 9px;
-            transition: transform 0.2s;
-            width: 12px;
-            text-align: center;
-        }
-
-        .chevron.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .section-content {
-            margin-left: 6px;
-            margin-top: 3px;
-            overflow: hidden;
-            transition: max-height 0.25s ease-out;
-        }
-
-        .section-content.collapsed {
-            max-height: 0 !important;
-        }
-
         .tree-item {
-            padding: 7px 8px;
-            margin: 2px 0;
-            background: var(--bg-secondary);
-            border-radius: 3px;
+            padding: 4px 6px;
+            margin: 1px 0;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             font-size: 11px;
-            border-left: 3px solid transparent;
-            transition: background 0.15s;
+            border-left: 2px solid transparent;
+            transition: all 0.15s;
+            position: relative;
         }
 
-        .tree-item:active {
+        .tree-item:hover {
             background: var(--bg-hover);
         }
 
         .tree-item.active {
             background: var(--bg-hover);
-            border-right: 2px solid var(--border-active);
+            border-left-color: var(--border-active);
+        }
+
+        .tree-item-indent {
+            flex-shrink: 0;
         }
 
         .tree-icon {
-            font-size: 12px;
-            width: 14px;
+            font-size: 10px;
+            width: 12px;
             text-align: center;
+            flex-shrink: 0;
         }
 
         .tree-text {
@@ -304,14 +252,32 @@
             white-space: nowrap;
         }
 
-        .tree-delete {
-            opacity: 0.5;
-            padding: 3px;
-            font-size: 10px;
-            color: var(--error);
+        .tree-actions {
+            opacity: 0;
+            display: flex;
+            gap: 2px;
         }
 
-        /* Type colors */
+        .tree-item:hover .tree-actions {
+            opacity: 1;
+        }
+
+        .tree-action {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 2px 3px;
+            font-size: 8px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .tree-action:hover {
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+
+        /* Type Colors */
         .type-h2 { border-left-color: var(--color-h2); }
         .type-h3 { border-left-color: var(--color-h3); }
         .type-h4 { border-left-color: var(--color-h4); }
@@ -321,38 +287,54 @@
         .type-info_box { border-left-color: var(--color-info); }
         .type-ul, .type-ol { border-left-color: var(--color-list); }
         .type-quote { border-left-color: var(--color-quote); }
-        .type-steps, .type-expandable { border-left-color: var(--color-expandable); }
+        .type-steps, .type-expandable { border-left-color: var(--color-steps); }
 
-        /* ==================== EDITOR ==================== */
-        .editor {
-            flex: 1;
+        /* ==================== TEMPLATES ==================== */
+        .template-item {
+            padding: 6px 8px;
+            margin: 2px 0;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            cursor: move;
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background: var(--bg-primary);
-            min-height: 0; /* Important for flex */
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            border-left: 2px solid transparent;
+            transition: all 0.15s;
         }
 
+        .template-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .template-icon {
+            font-size: 11px;
+            width: 14px;
+            text-align: center;
+        }
+
+        .template-label {
+            flex: 1;
+        }
+
+        /* ==================== EDITOR ==================== */
         .editor-tabs {
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
             display: flex;
+            height: 28px;
             flex-shrink: 0;
         }
 
         .editor-tab {
-            flex: 1;
-            padding: 10px;
+            padding: 6px 12px;
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            font-size: 11px;
+            font-size: 10px;
             cursor: pointer;
             border-bottom: 2px solid transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
             transition: all 0.15s;
         }
 
@@ -364,10 +346,8 @@
         .editor-view {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
             padding: 12px;
-            -webkit-overflow-scrolling: touch;
-            min-height: 0; /* Important for flex */
+            position: relative;
         }
 
         .empty-state {
@@ -375,45 +355,157 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 200px;
+            height: 100%;
             color: var(--text-muted);
-            text-align: center;
-            padding: 20px;
         }
 
         .empty-icon {
             font-size: 40px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             opacity: 0.3;
+        }
+
+        /* ==================== JSON VIEWER ==================== */
+        .json-viewer-wrapper {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .json-viewer-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .json-viewer-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .json-viewer-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .json-viewer {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 12px;
+            overflow-x: auto;
+            white-space: pre;
+            max-height: calc(100vh - 200px);
+        }
+
+        .json-key {
+            color: var(--json-key);
+        }
+
+        .json-string {
+            color: var(--json-string);
+        }
+
+        .json-number {
+            color: var(--json-number);
+        }
+
+        .json-boolean {
+            color: var(--json-boolean);
+        }
+
+        .json-null {
+            color: var(--json-null);
+        }
+
+        .json-bracket {
+            color: var(--json-bracket);
+            font-weight: bold;
+        }
+
+        /* ==================== FULLSCREEN MODE ==================== */
+        .fullscreen-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .fullscreen-overlay.active {
+            display: flex;
+        }
+
+        .fullscreen-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .fullscreen-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .fullscreen-content {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
         }
 
         /* ==================== FORMS ==================== */
         .editor-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 16px;
-            padding-bottom: 10px;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
         }
 
+        .editor-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .editor-type-icon {
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .editor-type-label {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 600;
         }
 
+        .editor-header-actions {
+            display: flex;
+            gap: 3px;
+        }
+
         .form-group {
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3px;
+            font-size: 9px;
             color: var(--text-secondary);
             font-weight: 600;
             text-transform: uppercase;
@@ -427,12 +519,11 @@
             background: var(--bg-input);
             border: 1px solid var(--border);
             color: var(--text-primary);
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px; /* Prevent zoom on iOS */
+            padding: 6px 8px;
+            border-radius: 2px;
+            font-size: 12px;
             font-family: inherit;
             transition: border-color 0.15s;
-            -webkit-appearance: none;
         }
 
         .form-input:focus,
@@ -444,27 +535,69 @@
 
         .form-textarea {
             resize: vertical;
-            min-height: 120px;
-            line-height: 1.5;
+            min-height: 80px;
+            line-height: 1.4;
         }
 
         .form-textarea.monospace {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        /* ==================== CODE EDITOR ==================== */
+        .code-editor-wrapper {
+            position: relative;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+        }
+
+        .code-editor-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 4px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-editor-textarea {
+            width: 100%;
+            min-height: 250px;
+            background: var(--bg-input);
+            border: none;
+            color: var(--text-primary);
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 12px;
+            line-height: 1.6;
+            tab-size: 4;
+            resize: vertical;
+        }
+
+        .code-editor-textarea:focus {
+            outline: none;
         }
 
         /* ==================== TABLE EDITOR ==================== */
+        .table-editor-wrapper {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 8px;
+        }
+
         .table-controls {
             display: flex;
-            gap: 6px;
-            margin-bottom: 10px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
         .table-wrapper {
             overflow-x: auto;
             border: 1px solid var(--border);
-            border-radius: 4px;
-            -webkit-overflow-scrolling: touch;
+            border-radius: 2px;
         }
 
         .editor-table {
@@ -475,16 +608,17 @@
 
         .editor-table th,
         .editor-table td {
-            padding: 8px;
+            padding: 6px;
             border: 1px solid var(--border);
-            min-width: 100px;
+            min-width: 80px;
         }
 
         .editor-table th {
             background: var(--bg-tertiary);
             font-weight: 600;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
+            position: relative;
         }
 
         .editor-table input {
@@ -492,8 +626,8 @@
             background: transparent;
             border: none;
             color: var(--text-primary);
-            padding: 4px;
-            font-size: 13px;
+            padding: 3px;
+            font-size: 11px;
         }
 
         .editor-table input:focus {
@@ -501,104 +635,118 @@
             background: var(--bg-primary);
         }
 
-        /* ==================== STEPS EDITOR ==================== */
-        .step-item {
+        /* ==================== EDITABLE LISTS ==================== */
+        .editable-list {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 10px;
+            border-radius: 2px;
+            padding: 6px;
         }
 
-        .step-header {
+        .editable-list-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        .step-number {
+        .editable-list-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .editable-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 6px;
+            margin-bottom: 6px;
+        }
+
+        .editable-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .editable-item-number {
             font-size: 9px;
             font-weight: 600;
-            text-transform: uppercase;
             color: var(--text-secondary);
-            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        .step-delete {
+        .editable-item-actions {
+            display: flex;
+            gap: 2px;
+        }
+
+        .item-action {
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            padding: 4px 6px;
+            padding: 2px 4px;
+            font-size: 9px;
             cursor: pointer;
-            border-radius: 3px;
-            font-size: 12px;
-            transition: all 0.15s;
+            border-radius: 2px;
         }
 
-        .step-delete:active {
+        .item-action:hover {
             background: var(--bg-hover);
-            color: var(--error);
+            color: var(--text-primary);
         }
 
-        /* ==================== SMART IMPORT ==================== */
-        .import-info {
+        /* ==================== NESTED EDITOR ==================== */
+        .nested-editor {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 8px;
+        }
+
+        .nested-item {
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 12px;
-            font-size: 11px;
-            color: var(--text-secondary);
-            line-height: 1.5;
+            border-radius: 2px;
+            padding: 8px;
+            margin-bottom: 6px;
         }
 
-        .import-textarea {
-            width: 100%;
-            min-height: 250px;
+        .nested-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        /* ==================== SEARCH ==================== */
+        .search-bar {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 8px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .search-input {
+            flex: 1;
             background: var(--bg-input);
             border: 1px solid var(--border);
             color: var(--text-primary);
-            padding: 10px;
-            border-radius: 4px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            resize: vertical;
-            margin-bottom: 10px;
+            padding: 4px 8px;
+            border-radius: 2px;
+            font-size: 11px;
         }
 
-        .import-textarea:focus {
+        .search-input:focus {
             outline: none;
             border-color: var(--border-active);
         }
 
-        .import-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .checkbox-label input {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* ==================== MODAL ==================== */
+        /* ==================== MODALS ==================== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -610,7 +758,7 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            padding: 16px;
+            padding: 12px;
         }
 
         .modal-overlay.active {
@@ -620,10 +768,10 @@
         .modal {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: 3px;
             width: 100%;
-            max-width: 480px;
-            max-height: 80vh;
+            max-width: 600px;
+            max-height: 85vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -632,14 +780,14 @@
         .modal-header {
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border);
-            padding: 12px;
+            padding: 8px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .modal-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
         }
 
@@ -647,17 +795,17 @@
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            font-size: 18px;
+            font-size: 14px;
             cursor: pointer;
-            width: 32px;
-            height: 32px;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 3px;
+            border-radius: 2px;
         }
 
-        .modal-close:active {
+        .modal-close:hover {
             background: var(--bg-hover);
         }
 
@@ -668,7 +816,7 @@
 
         .modal-footer {
             border-top: 1px solid var(--border);
-            padding: 12px;
+            padding: 8px 12px;
             display: flex;
             justify-content: flex-end;
             gap: 6px;
@@ -684,11 +832,11 @@
             position: absolute;
             top: 100%;
             right: 0;
-            margin-top: 4px;
+            margin-top: 2px;
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 4px;
-            min-width: 180px;
+            border-radius: 2px;
+            min-width: 160px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
             z-index: 100;
         }
@@ -698,12 +846,12 @@
         }
 
         .dropdown-item {
-            padding: 10px 12px;
+            padding: 6px 10px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             border: none;
             background: transparent;
             width: 100%;
@@ -711,68 +859,65 @@
             color: var(--text-primary);
         }
 
-        .dropdown-item:active {
+        .dropdown-item:hover {
             background: var(--bg-hover);
         }
 
         .dropdown-item i {
-            width: 14px;
+            width: 12px;
             text-align: center;
         }
 
         .divider {
             height: 1px;
             background: var(--border);
-            margin: 4px 0;
+            margin: 3px 0;
         }
 
         /* ==================== TOAST ==================== */
         .toast-container {
             position: fixed;
-            top: 54px;
+            top: 40px;
             right: 10px;
-            left: 10px;
             z-index: 2000;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            pointer-events: none;
         }
 
         .toast {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-left: 4px solid var(--success);
-            border-radius: 4px;
-            padding: 10px;
+            border-left: 3px solid #4ec9b0;
+            border-radius: 2px;
+            padding: 8px 10px;
+            min-width: 200px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
             animation: slideIn 0.3s;
-            pointer-events: auto;
         }
 
-        .toast.error { border-left-color: var(--error); }
-        .toast.warning { border-left-color: var(--warning); }
+        .toast.error { border-left-color: #f87171; }
+        .toast.warning { border-left-color: #fbbf24; }
 
         .toast-icon {
-            font-size: 14px;
-            flex-shrink: 0;
+            font-size: 12px;
         }
 
         .toast-message {
             flex: 1;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         @keyframes slideIn {
             from {
-                transform: translateY(-20px);
+                transform: translateX(300px);
                 opacity: 0;
             }
             to {
-                transform: translateY(0);
+                transform: translateX(0);
                 opacity: 1;
             }
         }
@@ -782,96 +927,143 @@
             display: none !important;
         }
 
-        /* Prevent pull-to-refresh */
-        body {
-            overscroll-behavior-y: contain;
+        .badge {
+            background: var(--bg-input);
+            padding: 1px 5px;
+            border-radius: 6px;
+            font-size: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            width: 14px;
+            height: 14px;
+        }
+
+        .dragging {
+            opacity: 0.5;
+        }
+
+        .drag-over {
+            border-top: 2px solid var(--border-active);
+        }
+
+        .kbd {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 1px 4px;
+            font-size: 9px;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-title">
+        <!-- Toolbar -->
+        <header class="toolbar">
+            <div class="toolbar-brand">
                 <i class="fas fa-code"></i>
-                <span>JSON Editor</span>
+                <span>JSON Content Editor Pro</span>
             </div>
-            <div class="header-actions">
+            <div class="toolbar-actions">
+                <button class="btn" onclick="showSearch()" title="Suchen (Ctrl+F)">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="btn" onclick="undo()" title="Rückgängig (Ctrl+Z)">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="btn" onclick="redo()" title="Wiederholen (Ctrl+Y)">
+                    <i class="fas fa-redo"></i>
+                </button>
                 <div class="dropdown" id="importDropdown">
-                    <button class="btn" onclick="toggleDropdown()">
+                    <button class="btn" onclick="toggleDropdown('importDropdown')">
                         <i class="fas fa-folder-open"></i>
-                        <span>Import</span>
+                        Import
                     </button>
                     <div class="dropdown-menu">
                         <button class="dropdown-item" onclick="loadFile('replace')">
                             <i class="fas fa-file-import"></i>
-                            <span>Neu laden</span>
+                            Neu laden
                         </button>
                         <button class="dropdown-item" onclick="loadFile('append')">
                             <i class="fas fa-plus"></i>
-                            <span>Anhängen</span>
+                            Anhängen
                         </button>
                         <div class="divider"></div>
                         <button class="dropdown-item" onclick="showPositionModal()">
                             <i class="fas fa-map-pin"></i>
-                            <span>An Position</span>
+                            An Position
+                        </button>
+                        <div class="divider"></div>
+                        <button class="dropdown-item" onclick="showJsonImport()">
+                            <i class="fas fa-file-code"></i>
+                            JSON direkt
                         </button>
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="saveFile()">
-                    <i class="fas fa-save"></i>
-                    <span>Speichern</span>
+                <button class="btn" onclick="validateJson()">
+                    <i class="fas fa-check-circle"></i>
+                    Validieren
                 </button>
+                <button class="btn" onclick="showSettings()">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div class="dropdown" id="exportDropdown">
+                    <button class="btn btn-primary" onclick="toggleDropdown('exportDropdown')">
+                        <i class="fas fa-save"></i>
+                        Speichern
+                    </button>
+                    <div class="dropdown-menu">
+                        <button class="dropdown-item" onclick="saveFile('formatted')">
+                            <i class="fas fa-file-code"></i>
+                            Formatiert
+                        </button>
+                        <button class="dropdown-item" onclick="saveFile('minified')">
+                            <i class="fas fa-compress"></i>
+                            Minimiert
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <!-- Body -->
-        <div class="app-body">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-header">
+        <!-- Workspace -->
+        <div class="workspace">
+            <!-- Templates Panel -->
+            <aside class="panel panel-templates" id="panelTemplates">
+                <div class="panel-header">
+                    <span>Vorlagen</span>
+                </div>
+                <div class="panel-content" id="templates"></div>
+                <div class="resize-handle resize-handle-right" data-panel="panelTemplates"></div>
+            </aside>
+
+            <!-- Tree Panel -->
+            <aside class="panel panel-tree" id="panelTree">
+                <div class="panel-header">
                     <span>Struktur</span>
                     <span class="badge" id="itemCount">0</span>
                 </div>
-                <div class="quick-actions">
-                    <button class="quick-btn" onclick="addItem('h2')">
-                        <i class="fas fa-heading" style="color: var(--color-h2);"></i>
-                        <span class="quick-label">H2</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('h3')">
-                        <i class="fas fa-heading" style="color: var(--color-h3);"></i>
-                        <span class="quick-label">H3</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('p')">
-                        <i class="fas fa-paragraph" style="color: var(--color-p);"></i>
-                        <span class="quick-label">Text</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('code')">
-                        <i class="fas fa-code" style="color: var(--color-code);"></i>
-                        <span class="quick-label">Code</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('table')">
-                        <i class="fas fa-table" style="color: var(--color-table);"></i>
-                        <span class="quick-label">Tabelle</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('steps')">
-                        <i class="fas fa-list-ol" style="color: var(--color-expandable);"></i>
-                        <span class="quick-label">Schritte</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('info_box')">
-                        <i class="fas fa-circle-info" style="color: var(--color-info);"></i>
-                        <span class="quick-label">Info</span>
-                    </button>
-                    <button class="quick-btn" onclick="addItem('ul')">
-                        <i class="fas fa-list" style="color: var(--color-list);"></i>
-                        <span class="quick-label">Liste</span>
+                <div class="search-bar hidden" id="searchBar">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Suchen..." autocomplete="off">
+                    <button class="btn btn-icon" onclick="hideSearch()">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="sidebar-content" id="tree"></div>
+                <div class="panel-content" id="tree"></div>
+                <div class="resize-handle resize-handle-right" data-panel="panelTree"></div>
             </aside>
 
-            <!-- Editor -->
-            <main class="editor">
+            <!-- Editor Panel -->
+            <main class="panel panel-editor">
                 <div class="editor-tabs">
                     <button class="editor-tab active" id="tabEditor" onclick="switchTab('editor')">
                         <i class="fas fa-pen-to-square"></i>
@@ -881,30 +1073,101 @@
                         <i class="fas fa-wand-magic-sparkles"></i>
                         Smart Import
                     </button>
+                    <button class="editor-tab" id="tabJson" onclick="switchTab('json')">
+                        <i class="fas fa-file-code"></i>
+                        JSON Preview
+                    </button>
                 </div>
                 <div class="editor-view" id="viewEditor">
                     <div class="empty-state">
-                        <i class="far fa-hand-point-up empty-icon"></i>
-                        <div style="font-size: 12px;">Wählen Sie ein Element<br>aus der Struktur oben</div>
+                        <i class="far fa-hand-point-left empty-icon"></i>
+                        <div style="font-size: 11px;">Wählen Sie ein Element aus der Struktur</div>
                     </div>
                 </div>
                 <div class="editor-view hidden" id="viewImport">
-                    <div class="import-info">
-                        Markdown-Text hier einfügen. Unterstützt: Überschriften (##, ###), Code-Blöcke (```), Listen (-, *)
+                    <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 2px; padding: 8px; margin-bottom: 10px; font-size: 10px; color: var(--text-secondary);">
+                        Markdown-Text einfügen. Unterstützt: ##, ###, Code (```), Listen (-, *)
                     </div>
-                    <textarea class="import-textarea" id="importText" placeholder="## Neues Kapitel&#10;Text...&#10;&#10;```js&#10;code&#10;```&#10;&#10;- Liste"></textarea>
-                    <div class="import-footer">
+                    <textarea class="form-textarea monospace" id="importText" placeholder="## Kapitel&#10;Text...&#10;&#10;```js&#10;code&#10;```" style="min-height: 350px;"></textarea>
+                    <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
                         <label class="checkbox-label">
                             <input type="checkbox" id="autoNumber" checked>
-                            <span>Auto-Nummerierung</span>
+                            Auto-Nummerierung
                         </label>
                         <button class="btn btn-primary" onclick="processImport()">
                             <i class="fas fa-plus"></i>
-                            Hinzufügen
+                            Importieren
                         </button>
                     </div>
                 </div>
+                <div class="editor-view hidden" id="viewJson">
+                    <div class="json-viewer-wrapper">
+                        <div class="json-viewer-header">
+                            <span class="json-viewer-title">JSON Vorschau</span>
+                            <div class="json-viewer-actions">
+                                <button class="btn btn-icon" onclick="copyJson()" title="Kopieren">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-icon" onclick="downloadJson()" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="json-viewer" id="jsonViewer"></div>
+                    </div>
+                </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Fullscreen Overlay -->
+    <div class="fullscreen-overlay" id="fullscreenOverlay">
+        <div class="fullscreen-header">
+            <div class="fullscreen-title" id="fullscreenTitle">Editor</div>
+            <div>
+                <button class="btn" onclick="closeFullscreen()">
+                    <i class="fas fa-compress"></i>
+                    Schließen (ESC)
+                </button>
+            </div>
+        </div>
+        <div class="fullscreen-content" id="fullscreenContent"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Einstellungen</h3>
+                <button class="modal-close" onclick="closeSettings()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Nummerierung</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="settingAutoRenumber" checked>
+                        Automatische Umnummerierung
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tastatur-Shortcuts</label>
+                    <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.6;">
+                        <div><span class="kbd">Ctrl+S</span> Speichern</div>
+                        <div><span class="kbd">Ctrl+F</span> Suchen</div>
+                        <div><span class="kbd">Ctrl+Z</span> Rückgängig</div>
+                        <div><span class="kbd">Ctrl+Y</span> Wiederholen</div>
+                        <div><span class="kbd">Ctrl+D</span> Duplizieren</div>
+                        <div><span class="kbd">Del</span> Löschen</div>
+                        <div><span class="kbd">F11</span> Vollbild-Editor</div>
+                        <div><span class="kbd">ESC</span> Vollbild schließen</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeSettings()">OK</button>
+            </div>
         </div>
     </div>
 
@@ -925,7 +1188,7 @@
                         <option value="end">Am Ende</option>
                         <option value="before">Vor Element</option>
                         <option value="after">Nach Element</option>
-                        <option value="custom">Benutzerdefiniert</option>
+                        <option value="custom">Index</option>
                     </select>
                 </div>
                 <div class="form-group hidden" id="customIndexGroup">
@@ -935,7 +1198,7 @@
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="preserveMetadata" checked>
-                        <span>Metadaten übernehmen</span>
+                        Metadaten übernehmen
                     </label>
                 </div>
             </div>
@@ -946,14 +1209,37 @@
         </div>
     </div>
 
+    <!-- JSON Import Modal -->
+    <div class="modal-overlay" id="jsonImportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">JSON direkt importieren</h3>
+                <button class="modal-close" onclick="closeJsonImport()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">JSON Code einfügen</label>
+                    <textarea class="form-textarea monospace" id="jsonImportText" placeholder='{"content": [...]}' style="min-height: 300px;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeJsonImport()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="executeJsonImport()">Importieren</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- File Input -->
     <input type="file" id="fileInput" accept=".json" class="hidden">
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script>
-        // Global state
+        // Application State
         let data = {
             filename: 'chapter.json',
             chapter_id: '01',
@@ -964,11 +1250,38 @@
         let state = {
             activeIndex: -1,
             loadMode: 'replace',
-            collapsed: new Set()
+            history: [],
+            historyIndex: -1,
+            searchTerm: '',
+            settings: {
+                autoRenumber: true
+            }
         };
+
+        const templates = [
+            { type: 'h2', label: 'H2 Überschrift', icon: 'fas fa-heading', data: { type: 'h2', text: 'Neue Überschrift' } },
+            { type: 'h3', label: 'H3 Überschrift', icon: 'fas fa-heading', data: { type: 'h3', text: 'Neue Überschrift' } },
+            { type: 'h4', label: 'H4 Überschrift', icon: 'fas fa-heading', data: { type: 'h4', text: 'Neue Überschrift' } },
+            { type: 'p', label: 'Absatz', icon: 'fas fa-paragraph', data: { type: 'p', text: 'Neuer Absatz' } },
+            { type: 'code', label: 'Code', icon: 'fas fa-code', data: { type: 'code', lang: 'javascript', content: '// Code' } },
+            { type: 'table', label: 'Tabelle', icon: 'fas fa-table', data: { type: 'table', headers: ['Spalte 1', 'Spalte 2'], rows: [['', '']] } },
+            { type: 'steps', label: 'Schritte', icon: 'fas fa-list-ol', data: { type: 'steps', items: [{ title: 'Schritt 1', text: '' }] } },
+            { type: 'ul', label: 'Liste (ul)', icon: 'fas fa-list', data: { type: 'ul', items: ['Punkt 1', 'Punkt 2'] } },
+            { type: 'ol', label: 'Liste (ol)', icon: 'fas fa-list-ol', data: { type: 'ol', items: ['Punkt 1', 'Punkt 2'] } },
+            { type: 'info_box', label: 'Info-Box', icon: 'fas fa-circle-info', data: { type: 'info_box', style: 'info', title: 'Info', text: '' } },
+            { type: 'quote', label: 'Zitat', icon: 'fas fa-quote-left', data: { type: 'quote', text: 'Zitat' } },
+            { type: 'expandable', label: 'Ausklappbar', icon: 'fas fa-chevron-down', data: { type: 'expandable', title: 'Titel', content: [] } }
+        ];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            initResizablePanels();
+            initKeyboardShortcuts();
+            renderTemplates();
+            initDragDrop();
+            saveHistory(); // Initial state
+            render();
+            
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
             document.getElementById('positionSelect').addEventListener('change', e => {
                 document.getElementById('customIndexGroup').classList.toggle('hidden', e.target.value !== 'custom');
@@ -976,15 +1289,247 @@
             
             document.addEventListener('click', e => {
                 if (!e.target.closest('.dropdown')) {
-                    document.getElementById('importDropdown').classList.remove('active');
+                    document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
                 }
             });
-            
-            render();
+
+            document.getElementById('searchInput').addEventListener('input', e => {
+                state.searchTerm = e.target.value.toLowerCase();
+                renderTree();
+            });
         });
 
+        // Resizable Panels
+        function initResizablePanels() {
+            const handles = document.querySelectorAll('.resize-handle');
+            
+            handles.forEach(handle => {
+                let isResizing = false;
+                let startX, startWidth;
+                const panel = document.getElementById(handle.dataset.panel);
+
+                handle.addEventListener('mousedown', e => {
+                    isResizing = true;
+                    startX = e.clientX;
+                    startWidth = panel.offsetWidth;
+                    handle.classList.add('active');
+                    e.preventDefault();
+                });
+
+                document.addEventListener('mousemove', e => {
+                    if (!isResizing) return;
+                    const width = startWidth + (e.clientX - startX);
+                    const minWidth = parseInt(getComputedStyle(panel).minWidth);
+                    if (width >= minWidth) {
+                        panel.style.width = width + 'px';
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        handle.classList.remove('active');
+                    }
+                });
+            });
+        }
+
+        // Keyboard Shortcuts
+        function initKeyboardShortcuts() {
+            document.addEventListener('keydown', e => {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveFile('formatted');
+                }
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    showSearch();
+                }
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                }
+                if (e.ctrlKey && e.key === 'y') {
+                    e.preventDefault();
+                    redo();
+                }
+                if (e.ctrlKey && e.key === 'd' && state.activeIndex >= 0) {
+                    e.preventDefault();
+                    duplicateItem(state.activeIndex);
+                }
+                if (e.key === 'Delete' && state.activeIndex >= 0 && !e.target.matches('input, textarea')) {
+                    deleteItem(state.activeIndex);
+                }
+                if (e.key === 'F11') {
+                    e.preventDefault();
+                    if (state.activeIndex >= 0) {
+                        const item = data.content[state.activeIndex];
+                        if (item.type === 'code' || item.type === 'table') {
+                            openFullscreen(item);
+                        }
+                    }
+                }
+                if (e.key === 'Escape') {
+                    closeFullscreen();
+                }
+            });
+        }
+
+        // History Management
+        function saveHistory() {
+            const snapshot = JSON.parse(JSON.stringify(data));
+            state.history = state.history.slice(0, state.historyIndex + 1);
+            state.history.push(snapshot);
+            state.historyIndex++;
+            if (state.history.length > 50) {
+                state.history.shift();
+                state.historyIndex--;
+            }
+        }
+
+        function undo() {
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                data = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
+                render();
+                if (state.activeIndex >= 0 && state.activeIndex < data.content.length) {
+                    renderEditor(data.content[state.activeIndex]);
+                }
+                toast('Rückgängig gemacht', 'success');
+            }
+        }
+
+        function redo() {
+            if (state.historyIndex < state.history.length - 1) {
+                state.historyIndex++;
+                data = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
+                render();
+                if (state.activeIndex >= 0 && state.activeIndex < data.content.length) {
+                    renderEditor(data.content[state.activeIndex]);
+                }
+                toast('Wiederhergestellt', 'success');
+            }
+        }
+
+        // Templates
+        function renderTemplates() {
+            const container = document.getElementById('templates');
+            container.innerHTML = '';
+
+            templates.forEach((template, idx) => {
+                const div = document.createElement('div');
+                div.className = 'template-item type-' + template.type;
+                div.draggable = true;
+                div.dataset.templateIndex = idx;
+                
+                div.innerHTML = `
+                    <i class="${template.icon} template-icon" style="color: var(--color-${template.type.replace('_', '-')});"></i>
+                    <span class="template-label">${template.label}</span>
+                `;
+
+                div.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('template', idx);
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+
+                div.addEventListener('click', () => {
+                    addItemFromTemplate(idx);
+                });
+
+                container.appendChild(div);
+            });
+        }
+
+        function addItemFromTemplate(templateIdx, position = null) {
+            saveHistory();
+            const template = templates[templateIdx];
+            const newItem = JSON.parse(JSON.stringify(template.data));
+            
+            if (position === null) {
+                data.content.push(newItem);
+                position = data.content.length - 1;
+            } else {
+                data.content.splice(position, 0, newItem);
+            }
+
+            if (state.settings.autoRenumber && (newItem.type === 'h2' || newItem.type === 'h3' || newItem.type === 'h4')) {
+                renumberHeadings();
+            }
+
+            render();
+            selectItem(position);
+            toast(template.label + ' hinzugefügt', 'success');
+        }
+
+        // Drag & Drop
+        function initDragDrop() {
+            const tree = document.getElementById('tree');
+            
+            tree.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                
+                const target = e.target.closest('.tree-item');
+                if (target) {
+                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    target.classList.add('drag-over');
+                }
+            });
+
+            tree.addEventListener('dragleave', e => {
+                const target = e.target.closest('.tree-item');
+                if (target) target.classList.remove('drag-over');
+            });
+
+            tree.addEventListener('drop', e => {
+                e.preventDefault();
+                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                
+                const templateIdx = e.dataTransfer.getData('template');
+                if (templateIdx !== '') {
+                    const target = e.target.closest('.tree-item');
+                    if (target) {
+                        const targetIndex = parseInt(target.dataset.index);
+                        addItemFromTemplate(parseInt(templateIdx), targetIndex + 1);
+                    } else {
+                        addItemFromTemplate(parseInt(templateIdx));
+                    }
+                }
+            });
+        }
+
+        // Renumbering
+        function renumberHeadings() {
+            if (!state.settings.autoRenumber) return;
+
+            let h2Num = 0, h3Num = 0, h4Num = 0;
+            
+            for (let i = 0; i < data.content.length; i++) {
+                const item = data.content[i];
+                
+                if (item.type === 'h2' && item.text) {
+                    h2Num++;
+                    h3Num = 0;
+                    h4Num = 0;
+                    const text = item.text.replace(/^\d+\.\s*/, '');
+                    item.text = h2Num + '. ' + text;
+                } else if (item.type === 'h3' && item.text) {
+                    h3Num++;
+                    h4Num = 0;
+                    const text = item.text.replace(/^\d+\.\d+\.\s*/, '');
+                    item.text = h2Num + '.' + h3Num + ' ' + text;
+                } else if (item.type === 'h4' && item.text) {
+                    h4Num++;
+                    const text = item.text.replace(/^\d+\.\d+\.\d+\.\s*/, '');
+                    item.text = h2Num + '.' + h3Num + '.' + h4Num + ' ' + text;
+                }
+            }
+        }
+
+        // Render Functions
         function render() {
             renderTree();
+            renderJsonPreview();
             updateCount();
         }
 
@@ -993,97 +1538,86 @@
             container.innerHTML = '';
 
             if (!data.content || !data.content.length) {
-                container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:11px;">Keine Elemente vorhanden</div>';
+                container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:10px;">Keine Elemente</div>';
                 return;
             }
 
-            const sections = groupByH2();
-            sections.forEach((section, idx) => renderSection(section, idx, container));
-        }
-
-        function groupByH2() {
-            const sections = [];
-            let current = null;
-
+            let currentLevel = 0;
             data.content.forEach((item, index) => {
-                if (item.type === 'h2') {
-                    current = { header: item, headerIndex: index, items: [] };
-                    sections.push(current);
-                } else if (current) {
-                    current.items.push({ item, index });
-                } else {
-                    if (!sections.length) {
-                        sections.push({ header: { type: 'h2', text: 'Ohne Kapitel' }, headerIndex: -1, items: [] });
-                        current = sections[0];
-                    }
-                    current.items.push({ item, index });
-                }
+                if (state.searchTerm && !matchesSearch(item)) return;
+                
+                if (item.type === 'h2') currentLevel = 0;
+                else if (item.type === 'h3') currentLevel = 1;
+                else if (item.type === 'h4') currentLevel = 2;
+                
+                container.appendChild(createTreeItem(item, index, currentLevel));
             });
-
-            return sections;
         }
 
-        function renderSection(section, sectionIdx, container) {
-            const div = document.createElement('div');
-            div.className = 'tree-section';
-
-            if (section.headerIndex !== -1) {
-                const header = document.createElement('div');
-                const sectionId = 'section-' + sectionIdx;
-                const isCollapsed = state.collapsed.has(sectionId);
-                const isActive = state.activeIndex === section.headerIndex;
-
-                header.className = 'section-header type-h2' + (isActive ? ' active' : '');
-                header.innerHTML = `
-                    <i class="fas fa-chevron-down chevron ${isCollapsed ? 'collapsed' : ''}"></i>
-                    <i class="fas fa-heading"></i>
-                    <span style="flex:1">${escapeHtml(truncate(section.header.text || 'Kapitel', 30))}</span>
-                `;
-
-                header.addEventListener('click', e => {
-                    if (e.target.closest('.chevron')) {
-                        toggleSection(sectionId);
-                    } else {
-                        selectItem(section.headerIndex);
-                    }
-                });
-
-                div.appendChild(header);
-            }
-
-            const content = document.createElement('div');
-            content.id = 'section-' + sectionIdx;
-            content.className = 'section-content' + (state.collapsed.has('section-' + sectionIdx) ? ' collapsed' : '');
-            content.style.maxHeight = state.collapsed.has('section-' + sectionIdx) ? '0' : '2000px';
-
-            section.items.forEach(({ item, index }) => {
-                content.appendChild(createTreeItem(item, index));
-            });
-
-            div.appendChild(content);
-            container.appendChild(div);
+        function matchesSearch(item) {
+            if (!state.searchTerm) return true;
+            const term = state.searchTerm;
+            if (item.text && item.text.toLowerCase().includes(term)) return true;
+            if (item.title && item.title.toLowerCase().includes(term)) return true;
+            if (item.content && typeof item.content === 'string' && item.content.toLowerCase().includes(term)) return true;
+            return false;
         }
 
-        function createTreeItem(item, index) {
+        function createTreeItem(item, index, level) {
             const div = document.createElement('div');
             div.className = 'tree-item type-' + item.type + (state.activeIndex === index ? ' active' : '');
+            div.dataset.index = index;
+
+            const indent = level > 0 ? '<span class="tree-item-indent" style="width:' + (level * 12) + 'px;"></span>' : '';
 
             div.innerHTML = `
+                ${indent}
                 <i class="${getIcon(item.type)} tree-icon"></i>
                 <span class="tree-text">${escapeHtml(getPreview(item))}</span>
-                <i class="fas fa-trash tree-delete"></i>
+                <div class="tree-actions">
+                    <button class="tree-action" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
+                    <button class="tree-action" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
+                    <button class="tree-action" title="Duplizieren"><i class="fas fa-copy"></i></button>
+                    <button class="tree-action" title="Löschen"><i class="fas fa-trash"></i></button>
+                </div>
             `;
 
+            const actions = div.querySelectorAll('.tree-action');
+            actions[0].addEventListener('click', e => { e.stopPropagation(); moveItem(index, -1); });
+            actions[1].addEventListener('click', e => { e.stopPropagation(); moveItem(index, 1); });
+            actions[2].addEventListener('click', e => { e.stopPropagation(); duplicateItem(index); });
+            actions[3].addEventListener('click', e => { e.stopPropagation(); deleteItem(index); });
+
             div.addEventListener('click', e => {
-                e.stopPropagation();
-                if (e.target.classList.contains('fa-trash')) {
-                    deleteItem(index);
-                } else {
-                    selectItem(index);
-                }
+                if (!e.target.closest('.tree-action')) selectItem(index);
             });
 
             return div;
+        }
+
+        function renderJsonPreview() {
+            const viewer = document.getElementById('jsonViewer');
+            const json = JSON.stringify(data, null, 2);
+            viewer.innerHTML = syntaxHighlight(json);
+        }
+
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            }).replace(/([{}[\]])/g, '<span class="json-bracket">$1</span>');
         }
 
         function getIcon(type) {
@@ -1098,29 +1632,71 @@
         }
 
         function getPreview(item) {
-            if (item.text) return truncate(item.text, 40);
-            if (item.title) return truncate(item.title, 40);
-            if (item.type === 'table') return 'Tabelle (' + (item.headers ? item.headers.length : 0) + ' Spalten)';
-            if (item.type === 'steps') return 'Schritte (' + (item.items ? item.items.length : 0) + ')';
+            if (item.text) return truncate(item.text, 30);
+            if (item.title) return truncate(item.title, 30);
+            if (item.type === 'table') return 'Tabelle (' + (item.headers?.length || 0) + ' Spalten)';
+            if (item.type === 'steps') return 'Schritte (' + (item.items?.length || 0) + ')';
             if (item.items) return 'Liste (' + item.items.length + ')';
             return item.type.toUpperCase();
         }
 
-        function toggleSection(sectionId) {
-            if (state.collapsed.has(sectionId)) {
-                state.collapsed.delete(sectionId);
-            } else {
-                state.collapsed.add(sectionId);
-            }
-            renderTree();
-        }
-
+        // Item Operations
         function selectItem(index) {
             state.activeIndex = index;
             renderTree();
             renderEditor(data.content[index]);
+            switchTab('editor');
         }
 
+        function moveItem(index, direction) {
+            saveHistory();
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= data.content.length) return;
+            
+            const item = data.content.splice(index, 1)[0];
+            data.content.splice(newIndex, 0, item);
+            
+            if (state.activeIndex === index) state.activeIndex = newIndex;
+            if (state.settings.autoRenumber && (item.type === 'h2' || item.type === 'h3' || item.type === 'h4')) {
+                renumberHeadings();
+            }
+            
+            render();
+            toast('Element verschoben', 'success');
+        }
+
+        function duplicateItem(index) {
+            saveHistory();
+            const item = JSON.parse(JSON.stringify(data.content[index]));
+            data.content.splice(index + 1, 0, item);
+            
+            if (state.settings.autoRenumber && (item.type === 'h2' || item.type === 'h3' || item.type === 'h4')) {
+                renumberHeadings();
+            }
+            
+            render();
+            toast('Element dupliziert', 'success');
+        }
+
+        function deleteItem(index) {
+            if (confirm('Element wirklich löschen?')) {
+                saveHistory();
+                data.content.splice(index, 1);
+                
+                if (state.activeIndex === index) {
+                    state.activeIndex = -1;
+                    document.getElementById('viewEditor').innerHTML = '<div class="empty-state"><i class="far fa-hand-point-left empty-icon"></i><div style="font-size:11px;">Wählen Sie ein Element aus</div></div>';
+                } else if (state.activeIndex > index) {
+                    state.activeIndex--;
+                }
+                
+                if (state.settings.autoRenumber) renumberHeadings();
+                render();
+                toast('Element gelöscht', 'success');
+            }
+        }
+
+        // Editor Rendering
         function renderEditor(item) {
             const view = document.getElementById('viewEditor');
             view.innerHTML = '';
@@ -1128,11 +1704,19 @@
             const header = document.createElement('div');
             header.className = 'editor-header';
             header.innerHTML = `
-                <i class="${getIcon(item.type)} editor-type-icon"></i>
-                <span class="editor-type-label">${item.type.toUpperCase()}</span>
+                <div class="editor-title">
+                    <i class="${getIcon(item.type)} editor-type-icon"></i>
+                    <span class="editor-type-label">${item.type.toUpperCase()}</span>
+                </div>
+                <div class="editor-header-actions">
+                    <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-icon" onclick="duplicateItem(${state.activeIndex})" title="Duplizieren"><i class="fas fa-copy"></i></button>
+                    ${(item.type === 'code' || item.type === 'table') ? '<button class="btn btn-icon" onclick="openFullscreen(data.content['+state.activeIndex+'])" title="Vollbild (F11)"><i class="fas fa-expand"></i></button>' : ''}
+                    <button class="btn btn-icon" onclick="deleteItem(${state.activeIndex})" title="Löschen"><i class="fas fa-trash"></i></button>
+                </div>
             `;
             view.appendChild(header);
-
             view.appendChild(createForm(item));
         }
 
@@ -1143,13 +1727,15 @@
                 case 'h2': case 'h3': case 'h4': case 'p': case 'quote':
                     container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
                     break;
+
                 case 'code':
-                    container.appendChild(createInput('lang', 'Sprache', item.lang || 'JavaScript'));
-                    container.appendChild(createTextArea('content', 'Code', item.content || '', 10, true));
+                    container.appendChild(createCodeEditor(item));
                     break;
+
                 case 'table':
                     container.appendChild(createTableEditor(item));
                     break;
+
                 case 'info_box':
                     container.appendChild(createSelect('style', 'Stil', item.style || 'info', [
                         { value: 'info', label: 'Info' },
@@ -1160,14 +1746,18 @@
                     container.appendChild(createInput('title', 'Titel', item.title || ''));
                     container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
                     break;
+
                 case 'expandable':
                     container.appendChild(createInput('title', 'Titel', item.title || ''));
+                    container.appendChild(createNestedEditor(item));
                     break;
+
                 case 'steps':
                     container.appendChild(createStepsEditor(item));
                     break;
+
                 case 'ul': case 'ol':
-                    container.appendChild(createTextArea('items', 'Einträge (einer pro Zeile)', (item.items || []).join('\n'), 6));
+                    container.appendChild(createListEditor(item));
                     break;
             }
 
@@ -1185,20 +1775,14 @@
             return group;
         }
 
-        function createTextArea(field, label, value, rows, mono) {
+        function createTextArea(field, label, value, rows) {
             const group = document.createElement('div');
             group.className = 'form-group';
             group.innerHTML = `
                 <label class="form-label">${escapeHtml(label)}</label>
-                <textarea class="form-textarea ${mono ? 'monospace' : ''}" rows="${rows}">${escapeHtml(value)}</textarea>
+                <textarea class="form-textarea" rows="${rows}">${escapeHtml(value)}</textarea>
             `;
-            group.querySelector('textarea').addEventListener('input', e => {
-                if (field === 'items') {
-                    updateField(field, e.target.value.split('\n').filter(l => l.trim()));
-                } else {
-                    updateField(field, e.target.value);
-                }
-            });
+            group.querySelector('textarea').addEventListener('input', e => updateField(field, e.target.value));
             return group;
         }
 
@@ -1214,20 +1798,62 @@
             return group;
         }
 
+        function createCodeEditor(item) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-editor-wrapper';
+            wrapper.innerHTML = `
+                <div class="code-editor-header">
+                    <select class="form-select" style="width:auto;padding:2px 6px;font-size:10px;" id="codeLang">
+                        <option value="javascript" ${item.lang === 'javascript' ? 'selected' : ''}>JavaScript</option>
+                        <option value="python" ${item.lang === 'python' ? 'selected' : ''}>Python</option>
+                        <option value="html" ${item.lang === 'html' ? 'selected' : ''}>HTML</option>
+                        <option value="css" ${item.lang === 'css' ? 'selected' : ''}>CSS</option>
+                        <option value="json" ${item.lang === 'json' ? 'selected' : ''}>JSON</option>
+                        <option value="sql" ${item.lang === 'sql' ? 'selected' : ''}>SQL</option>
+                        <option value="bash" ${item.lang === 'bash' ? 'selected' : ''}>Bash</option>
+                        <option value="text" ${item.lang === 'text' ? 'selected' : ''}>Text</option>
+                    </select>
+                    <div style="display:flex;gap:4px;">
+                        <button class="btn btn-icon" onclick="copyCode()" title="Code kopieren">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn btn-icon" onclick="openFullscreen(data.content[${state.activeIndex}])" title="Vollbild (F11)">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <textarea class="code-editor-textarea" id="codeContent">${escapeHtml(item.content || '')}</textarea>
+            `;
+            
+            wrapper.querySelector('#codeLang').addEventListener('change', e => updateField('lang', e.target.value));
+            wrapper.querySelector('#codeContent').addEventListener('input', e => updateField('content', e.target.value));
+            
+            group.appendChild(wrapper);
+            return group;
+        }
+
         function createTableEditor(item) {
-            const container = document.createElement('div');
-            container.className = 'form-group';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-editor-wrapper';
 
             const controls = document.createElement('div');
             controls.className = 'table-controls';
             controls.innerHTML = `
-                <button class="btn" id="addCol"><i class="fas fa-plus"></i> Spalte</button>
-                <button class="btn" id="addRow"><i class="fas fa-plus"></i> Zeile</button>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn" onclick="addTableColumn()"><i class="fas fa-plus"></i> Spalte</button>
+                    <button class="btn" onclick="addTableRow()"><i class="fas fa-plus"></i> Zeile</button>
+                </div>
+                <button class="btn btn-icon" onclick="openFullscreen(data.content[${state.activeIndex}])" title="Vollbild (F11)">
+                    <i class="fas fa-expand"></i>
+                </button>
             `;
-            container.appendChild(controls);
+            wrapper.appendChild(controls);
 
-            const wrapper = document.createElement('div');
-            wrapper.className = 'table-wrapper';
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'table-wrapper';
             const table = document.createElement('table');
             table.className = 'editor-table';
 
@@ -1235,10 +1861,13 @@
             const headerRow = document.createElement('tr');
             (item.headers || []).forEach((h, i) => {
                 const th = document.createElement('th');
-                const input = document.createElement('input');
-                input.value = h || '';
-                input.addEventListener('input', e => updateTableHeader(i, e.target.value));
-                th.appendChild(input);
+                th.innerHTML = `
+                    <input value="${escapeHtml(h || '')}" placeholder="Spalte ${i + 1}">
+                    <button class="item-action" style="position:absolute;top:2px;right:2px;" onclick="deleteTableColumn(${i})" title="Löschen">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                th.querySelector('input').addEventListener('input', e => updateTableHeader(i, e.target.value));
                 headerRow.appendChild(th);
             });
             thead.appendChild(headerRow);
@@ -1250,39 +1879,121 @@
                 row.forEach((cell, ci) => {
                     const td = document.createElement('td');
                     const input = document.createElement('input');
-                    input.value = cell || '';
+                    input.value = escapeHtml(cell || '');
                     input.addEventListener('input', e => updateTableCell(ri, ci, e.target.value));
                     td.appendChild(input);
                     tr.appendChild(td);
                 });
+                
+                const actionTd = document.createElement('td');
+                actionTd.style.width = '30px';
+                actionTd.innerHTML = `
+                    <button class="item-action" onclick="deleteTableRow(${ri})" title="Löschen">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                tr.appendChild(actionTd);
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
-            wrapper.appendChild(table);
-            container.appendChild(wrapper);
+            tableWrapper.appendChild(table);
+            wrapper.appendChild(tableWrapper);
 
-            controls.querySelector('#addCol').addEventListener('click', addTableColumn);
-            controls.querySelector('#addRow').addEventListener('click', addTableRow);
+            return wrapper;
+        }
+
+        function createNestedEditor(item) {
+            const container = document.createElement('div');
+            container.className = 'nested-editor';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;';
+            header.innerHTML = `
+                <span style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;">Verschachtelte Inhalte</span>
+                <button class="btn" onclick="addNestedItem()">
+                    <i class="fas fa-plus"></i> Element
+                </button>
+            `;
+            container.appendChild(header);
+
+            if (!item.content) item.content = [];
+            
+            (item.content || []).forEach((nestedItem, i) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'nested-item';
+                itemDiv.innerHTML = `
+                    <div class="nested-item-header">
+                        <span style="font-size:9px;color:var(--text-secondary);"><i class="${getIcon(nestedItem.type)}"></i> ${nestedItem.type}</span>
+                        <button class="item-action" onclick="deleteNestedItem(${i})" title="Löschen">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <textarea class="form-textarea" rows="2" placeholder="Inhalt...">${escapeHtml(nestedItem.text || nestedItem.content || '')}</textarea>
+                `;
+                
+                itemDiv.querySelector('textarea').addEventListener('input', e => {
+                    if (nestedItem.text !== undefined) nestedItem.text = e.target.value;
+                    else if (nestedItem.content !== undefined) nestedItem.content = e.target.value;
+                    renderJsonPreview();
+                });
+                
+                container.appendChild(itemDiv);
+            });
 
             return container;
         }
 
+        function addNestedItem() {
+            if (state.activeIndex >= 0) {
+                saveHistory();
+                const item = data.content[state.activeIndex];
+                if (!item.content) item.content = [];
+                item.content.push({ type: 'p', text: '' });
+                renderEditor(item);
+                renderJsonPreview();
+                toast('Element hinzugefügt', 'success');
+            }
+        }
+
+        function deleteNestedItem(i) {
+            if (state.activeIndex >= 0 && confirm('Element wirklich löschen?')) {
+                saveHistory();
+                const item = data.content[state.activeIndex];
+                item.content.splice(i, 1);
+                renderEditor(item);
+                renderJsonPreview();
+                toast('Element gelöscht', 'success');
+            }
+        }
+
         function createStepsEditor(item) {
             const container = document.createElement('div');
-            container.className = 'form-group';
+            container.className = 'editable-list';
 
-            const controls = document.createElement('div');
-            controls.className = 'table-controls';
-            controls.innerHTML = '<button class="btn" id="addStep"><i class="fas fa-plus"></i> Schritt</button>';
-            container.appendChild(controls);
+            const header = document.createElement('div');
+            header.className = 'editable-list-header';
+            header.innerHTML = `
+                <span class="editable-list-title">Schritte</span>
+                <button class="btn" onclick="addStep()">
+                    <i class="fas fa-plus"></i> Schritt
+                </button>
+            `;
+            container.appendChild(header);
+
+            if (!item.items) item.items = [];
 
             (item.items || []).forEach((step, i) => {
-                const div = document.createElement('div');
-                div.className = 'step-item';
-                div.innerHTML = `
-                    <div class="step-header">
-                        <span class="step-number">Schritt ${i + 1}</span>
-                        <button class="step-delete"><i class="fas fa-trash"></i></button>
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'editable-item';
+                stepDiv.innerHTML = `
+                    <div class="editable-item-header">
+                        <span class="editable-item-number">Schritt ${i + 1}</span>
+                        <div class="editable-item-actions">
+                            <button class="item-action" onclick="moveStep(${i}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
+                            <button class="item-action" onclick="moveStep(${i}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
+                            <button class="item-action" onclick="duplicateStep(${i})" title="Duplizieren"><i class="fas fa-copy"></i></button>
+                            <button class="item-action" onclick="removeStep(${i})" title="Löschen"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Titel</label>
@@ -1294,138 +2005,336 @@
                     </div>
                 `;
                 
-                div.querySelector('input').addEventListener('input', e => updateStepField(i, 'title', e.target.value));
-                div.querySelector('textarea').addEventListener('input', e => updateStepField(i, 'text', e.target.value));
-                div.querySelector('.step-delete').addEventListener('click', () => removeStep(i));
+                stepDiv.querySelector('input').addEventListener('input', e => updateStepField(i, 'title', e.target.value));
+                stepDiv.querySelector('textarea').addEventListener('input', e => updateStepField(i, 'text', e.target.value));
                 
-                container.appendChild(div);
+                container.appendChild(stepDiv);
             });
 
-            controls.querySelector('#addStep').addEventListener('click', addStep);
             return container;
         }
 
+        function createListEditor(item) {
+            const container = document.createElement('div');
+            container.className = 'editable-list';
+
+            const header = document.createElement('div');
+            header.className = 'editable-list-header';
+            header.innerHTML = `
+                <span class="editable-list-title">Listeneinträge</span>
+                <button class="btn" onclick="addListItem()">
+                    <i class="fas fa-plus"></i> Eintrag
+                </button>
+            `;
+            container.appendChild(header);
+
+            if (!item.items) item.items = [];
+
+            (item.items || []).forEach((listItem, i) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'editable-item';
+                itemDiv.innerHTML = `
+                    <div class="editable-item-header">
+                        <span class="editable-item-number">Eintrag ${i + 1}</span>
+                        <div class="editable-item-actions">
+                            <button class="item-action" onclick="moveListItem(${i}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
+                            <button class="item-action" onclick="moveListItem(${i}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
+                            <button class="item-action" onclick="duplicateListItem(${i})" title="Duplizieren"><i class="fas fa-copy"></i></button>
+                            <button class="item-action" onclick="removeListItem(${i})" title="Löschen"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-input" value="${escapeHtml(listItem)}">
+                    </div>
+                `;
+                
+                itemDiv.querySelector('input').addEventListener('input', e => updateListItem(i, e.target.value));
+                container.appendChild(itemDiv);
+            });
+
+            return container;
+        }
+
+        // Update Functions
         function updateField(field, value) {
             if (state.activeIndex >= 0) {
                 data.content[state.activeIndex][field] = value;
+                if (field === 'text' && state.settings.autoRenumber) {
+                    const item = data.content[state.activeIndex];
+                    if (item.type === 'h2' || item.type === 'h3' || item.type === 'h4') {
+                        renumberHeadings();
+                    }
+                }
                 renderTree();
+                renderJsonPreview();
             }
         }
 
         function updateTableHeader(i, value) {
-            if (state.activeIndex >= 0) data.content[state.activeIndex].headers[i] = value;
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].headers[i] = value;
+                renderJsonPreview();
+            }
         }
 
         function updateTableCell(r, c, value) {
-            if (state.activeIndex >= 0) data.content[state.activeIndex].rows[r][c] = value;
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].rows[r][c] = value;
+                renderJsonPreview();
+            }
         }
 
         function addTableColumn() {
+            saveHistory();
             if (state.activeIndex >= 0) {
                 const item = data.content[state.activeIndex];
                 item.headers.push('Neue Spalte');
                 item.rows.forEach(row => row.push(''));
                 renderEditor(item);
+                renderJsonPreview();
+                toast('Spalte hinzugefügt', 'success');
             }
         }
 
         function addTableRow() {
+            saveHistory();
             if (state.activeIndex >= 0) {
                 const item = data.content[state.activeIndex];
                 item.rows.push(new Array(item.headers.length).fill(''));
                 renderEditor(item);
+                renderJsonPreview();
+                toast('Zeile hinzugefügt', 'success');
+            }
+        }
+
+        function deleteTableColumn(i) {
+            if (confirm('Spalte wirklich löschen?')) {
+                saveHistory();
+                const item = data.content[state.activeIndex];
+                item.headers.splice(i, 1);
+                item.rows.forEach(row => row.splice(i, 1));
+                renderEditor(item);
+                renderJsonPreview();
+                toast('Spalte gelöscht', 'success');
+            }
+        }
+
+        function deleteTableRow(i) {
+            if (confirm('Zeile wirklich löschen?')) {
+                saveHistory();
+                const item = data.content[state.activeIndex];
+                item.rows.splice(i, 1);
+                renderEditor(item);
+                renderJsonPreview();
+                toast('Zeile gelöscht', 'success');
             }
         }
 
         function updateStepField(i, field, value) {
-            if (state.activeIndex >= 0) data.content[state.activeIndex].items[i][field] = value;
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].items[i][field] = value;
+                renderJsonPreview();
+            }
         }
 
         function addStep() {
+            saveHistory();
             if (state.activeIndex >= 0) {
                 data.content[state.activeIndex].items.push({ title: 'Neuer Schritt', text: '' });
                 renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Schritt hinzugefügt', 'success');
             }
         }
 
         function removeStep(i) {
-            if (state.activeIndex >= 0) {
+            if (confirm('Schritt wirklich löschen?')) {
+                saveHistory();
                 data.content[state.activeIndex].items.splice(i, 1);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Schritt gelöscht', 'success');
+            }
+        }
+
+        function moveStep(i, direction) {
+            saveHistory();
+            if (state.activeIndex >= 0) {
+                const items = data.content[state.activeIndex].items;
+                const newIndex = i + direction;
+                if (newIndex < 0 || newIndex >= items.length) return;
+                
+                const step = items.splice(i, 1)[0];
+                items.splice(newIndex, 0, step);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Schritt verschoben', 'success');
+            }
+        }
+
+        function duplicateStep(i) {
+            saveHistory();
+            if (state.activeIndex >= 0) {
+                const items = data.content[state.activeIndex].items;
+                const step = JSON.parse(JSON.stringify(items[i]));
+                items.splice(i + 1, 0, step);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Schritt dupliziert', 'success');
+            }
+        }
+
+        function updateListItem(i, value) {
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].items[i] = value;
+                renderJsonPreview();
+            }
+        }
+
+        function addListItem() {
+            saveHistory();
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].items.push('Neuer Eintrag');
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Eintrag hinzugefügt', 'success');
+            }
+        }
+
+        function removeListItem(i) {
+            if (confirm('Eintrag wirklich löschen?')) {
+                saveHistory();
+                data.content[state.activeIndex].items.splice(i, 1);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Eintrag gelöscht', 'success');
+            }
+        }
+
+        function moveListItem(i, direction) {
+            saveHistory();
+            if (state.activeIndex >= 0) {
+                const items = data.content[state.activeIndex].items;
+                const newIndex = i + direction;
+                if (newIndex < 0 || newIndex >= items.length) return;
+                
+                const item = items.splice(i, 1)[0];
+                items.splice(newIndex, 0, item);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Eintrag verschoben', 'success');
+            }
+        }
+
+        function duplicateListItem(i) {
+            saveHistory();
+            if (state.activeIndex >= 0) {
+                const items = data.content[state.activeIndex].items;
+                items.splice(i + 1, 0, items[i]);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Eintrag dupliziert', 'success');
+            }
+        }
+
+        // Fullscreen
+        function openFullscreen(item) {
+            const overlay = document.getElementById('fullscreenOverlay');
+            const title = document.getElementById('fullscreenTitle');
+            const content = document.getElementById('fullscreenContent');
+            
+            title.textContent = item.type.toUpperCase() + ' - Vollbild-Editor';
+            
+            if (item.type === 'code') {
+                content.innerHTML = `
+                    <div class="code-editor-wrapper" style="max-width:1400px;margin:0 auto;">
+                        <div class="code-editor-header">
+                            <select class="form-select" style="width:auto;" id="fullscreenCodeLang">
+                                <option value="javascript" ${item.lang === 'javascript' ? 'selected' : ''}>JavaScript</option>
+                                <option value="python" ${item.lang === 'python' ? 'selected' : ''}>Python</option>
+                                <option value="html" ${item.lang === 'html' ? 'selected' : ''}>HTML</option>
+                                <option value="css" ${item.lang === 'css' ? 'selected' : ''}>CSS</option>
+                                <option value="json" ${item.lang === 'json' ? 'selected' : ''}>JSON</option>
+                                <option value="sql" ${item.lang === 'sql' ? 'selected' : ''}>SQL</option>
+                                <option value="bash" ${item.lang === 'bash' ? 'selected' : ''}>Bash</option>
+                            </select>
+                        </div>
+                        <textarea class="code-editor-textarea" id="fullscreenCodeContent" style="min-height:calc(100vh - 150px);">${escapeHtml(item.content || '')}</textarea>
+                    </div>
+                `;
+                
+                content.querySelector('#fullscreenCodeLang').addEventListener('change', e => {
+                    item.lang = e.target.value;
+                    renderJsonPreview();
+                });
+                content.querySelector('#fullscreenCodeContent').addEventListener('input', e => {
+                    item.content = e.target.value;
+                    renderJsonPreview();
+                });
+            } else if (item.type === 'table') {
+                content.innerHTML = '<div style="max-width:1600px;margin:0 auto;"></div>';
+                content.firstChild.appendChild(createTableEditor(item));
+            }
+            
+            overlay.classList.add('active');
+        }
+
+        function closeFullscreen() {
+            document.getElementById('fullscreenOverlay').classList.remove('active');
+            if (state.activeIndex >= 0 && state.activeIndex < data.content.length) {
                 renderEditor(data.content[state.activeIndex]);
             }
         }
 
-        function addItem(type) {
-            const templates = {
-                h2: { type: 'h2', text: 'Neue Überschrift H2' },
-                h3: { type: 'h3', text: 'Neue Überschrift H3' },
-                h4: { type: 'h4', text: 'Neue Überschrift H4' },
-                p: { type: 'p', text: 'Neuer Absatz' },
-                code: { type: 'code', lang: 'JavaScript', content: '// Code' },
-                table: { type: 'table', headers: ['Spalte 1', 'Spalte 2'], rows: [['', '']] },
-                steps: { type: 'steps', items: [{ title: 'Schritt 1', text: '' }] },
-                expandable: { type: 'expandable', title: 'Ausklappbar', content: [] },
-                info_box: { type: 'info_box', style: 'info', title: 'Info', text: '' },
-                ul: { type: 'ul', items: ['Punkt 1', 'Punkt 2'] },
-                ol: { type: 'ol', items: ['Punkt 1', 'Punkt 2'] },
-                quote: { type: 'quote', text: 'Zitat' }
-            };
-
-            data.content.push(templates[type]);
-            render();
-            selectItem(data.content.length - 1);
-            toast(type.toUpperCase() + ' hinzugefügt', 'success');
-        }
-
-        function deleteItem(index) {
-            if (confirm('Element löschen?')) {
-                data.content.splice(index, 1);
-                if (state.activeIndex === index) {
-                    state.activeIndex = -1;
-                    document.getElementById('viewEditor').innerHTML = '<div class="empty-state"><i class="far fa-hand-point-up empty-icon"></i><div style="font-size:12px;">Wählen Sie ein Element</div></div>';
-                }
-                render();
-                toast('Element gelöscht', 'success');
-            }
-        }
-
+        // Tabs
         function switchTab(tab) {
-            const editorTab = document.getElementById('tabEditor');
-            const importTab = document.getElementById('tabImport');
-            const editorView = document.getElementById('viewEditor');
-            const importView = document.getElementById('viewImport');
-
-            if (tab === 'editor') {
-                editorTab.classList.add('active');
-                importTab.classList.remove('active');
-                editorView.classList.remove('hidden');
-                importView.classList.add('hidden');
-            } else {
-                editorTab.classList.remove('active');
-                importTab.classList.add('active');
-                editorView.classList.add('hidden');
-                importView.classList.remove('hidden');
+            document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.editor-view').forEach(v => v.classList.add('hidden'));
+            
+            const tabElement = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            const viewElement = document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            
+            if (tabElement) tabElement.classList.add('active');
+            if (viewElement) viewElement.classList.remove('hidden');
+            
+            if (tab === 'json') {
+                renderJsonPreview();
             }
         }
 
+        // Search
+        function showSearch() {
+            document.getElementById('searchBar').classList.remove('hidden');
+            document.getElementById('searchInput').focus();
+        }
+
+        function hideSearch() {
+            document.getElementById('searchBar').classList.add('hidden');
+            document.getElementById('searchInput').value = '';
+            state.searchTerm = '';
+            renderTree();
+        }
+
+        // Import/Export
         function processImport() {
             const text = document.getElementById('importText').value;
-            const autoNum = document.getElementById('autoNumber').checked;
-
             if (!text.trim()) {
                 toast('Bitte Text eingeben', 'warning');
                 return;
             }
 
-            const items = parseMarkdown(text, autoNum);
+            saveHistory();
+            const items = parseMarkdown(text);
             data.content.push(...items);
             document.getElementById('importText').value = '';
+            
+            if (state.settings.autoRenumber) renumberHeadings();
             render();
             switchTab('editor');
             toast(items.length + ' Elemente importiert', 'success');
         }
 
-        function parseMarkdown(text, autoNum) {
+        function parseMarkdown(text) {
             const lines = text.split('\n');
             const items = [];
             let inCode = false, codeBuffer = [], codeLang = 'text';
@@ -1438,8 +2347,6 @@
                     inList = false;
                 }
             };
-
-            let h2Num = getLastH2Number(), h3Num = 0;
 
             lines.forEach(line => {
                 const trim = line.trim();
@@ -1469,24 +2376,13 @@
 
                 if (line.startsWith('## ')) {
                     flushList();
-                    let title = line.replace('## ', '').trim();
-                    if (autoNum && !title.match(/^\d+/)) {
-                        h2Num++;
-                        h3Num = 0;
-                        title = h2Num + '. ' + title;
-                    }
-                    items.push({ type: 'h2', text: title });
+                    items.push({ type: 'h2', text: line.replace('## ', '').trim() });
                     return;
                 }
 
                 if (line.startsWith('### ')) {
                     flushList();
-                    let title = line.replace('### ', '').trim();
-                    if (autoNum && !title.match(/^\d+\.\d+/)) {
-                        h3Num++;
-                        title = h2Num + '.' + h3Num + ' ' + title;
-                    }
-                    items.push({ type: 'h3', text: title });
+                    items.push({ type: 'h3', text: line.replace('### ', '').trim() });
                     return;
                 }
 
@@ -1524,24 +2420,17 @@
             return items;
         }
 
-        function getLastH2Number() {
-            for (let i = data.content.length - 1; i >= 0; i--) {
-                if (data.content[i].type === 'h2' && data.content[i].text) {
-                    const match = data.content[i].text.match(/^(\d+)/);
-                    if (match) return parseInt(match[1]);
-                }
-            }
-            return parseInt(data.chapter_id) || 0;
-        }
-
-        function toggleDropdown() {
-            document.getElementById('importDropdown').classList.toggle('active');
+        function toggleDropdown(id) {
+            const dropdown = document.getElementById(id);
+            const wasActive = dropdown.classList.contains('active');
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
+            if (!wasActive) dropdown.classList.add('active');
         }
 
         function loadFile(mode) {
             state.loadMode = mode;
             document.getElementById('fileInput').click();
-            document.getElementById('importDropdown').classList.remove('active');
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
         }
 
         function handleFileSelect(e) {
@@ -1552,6 +2441,7 @@
             reader.onload = ev => {
                 try {
                     const json = JSON.parse(ev.target.result);
+                    saveHistory();
                     
                     if (state.loadMode === 'replace') {
                         data = json;
@@ -1565,9 +2455,9 @@
                     
                     state.activeIndex = -1;
                     render();
-                    document.getElementById('viewEditor').innerHTML = '<div class="empty-state"><i class="far fa-hand-point-up empty-icon"></i><div style="font-size:12px;">Wählen Sie ein Element</div></div>';
+                    document.getElementById('viewEditor').innerHTML = '<div class="empty-state"><i class="far fa-hand-point-left empty-icon"></i><div style="font-size:11px;">Wählen Sie ein Element aus</div></div>';
                 } catch (err) {
-                    toast('Ungültiges JSON', 'error');
+                    toast('Ungültiges JSON: ' + err.message, 'error');
                 }
             };
             reader.readAsText(file);
@@ -1576,7 +2466,7 @@
 
         function showPositionModal() {
             document.getElementById('positionModal').classList.add('active');
-            document.getElementById('importDropdown').classList.remove('active');
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
         }
 
         function closePositionModal() {
@@ -1604,6 +2494,7 @@
                             return;
                         }
 
+                        saveHistory();
                         if (preserveMetadata) {
                             if (json.filename) data.filename = json.filename;
                             if (json.chapter_id) data.chapter_id = json.chapter_id;
@@ -1620,11 +2511,13 @@
                         }
 
                         data.content.splice(idx, 0, ...json.content);
+                        if (state.settings.autoRenumber) renumberHeadings();
+                        
                         render();
                         closePositionModal();
                         toast(json.content.length + ' Elemente eingefügt', 'success');
                     } catch (err) {
-                        toast('Fehler beim Import', 'error');
+                        toast('Fehler: ' + err.message, 'error');
                     }
                 };
                 reader.readAsText(file);
@@ -1632,8 +2525,43 @@
             input.click();
         }
 
-        function saveFile() {
-            const json = JSON.stringify(data, null, 2);
+        function showJsonImport() {
+            document.getElementById('jsonImportModal').classList.add('active');
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
+        }
+
+        function closeJsonImport() {
+            document.getElementById('jsonImportModal').classList.remove('active');
+        }
+
+        function executeJsonImport() {
+            const text = document.getElementById('jsonImportText').value;
+            try {
+                const json = JSON.parse(text);
+                saveHistory();
+                
+                if (json.content && Array.isArray(json.content)) {
+                    data.content.push(...json.content);
+                    toast(json.content.length + ' Elemente importiert', 'success');
+                } else if (Array.isArray(json)) {
+                    data.content.push(...json);
+                    toast(json.length + ' Elemente importiert', 'success');
+                } else {
+                    toast('Ungültiges Format', 'error');
+                    return;
+                }
+                
+                if (state.settings.autoRenumber) renumberHeadings();
+                render();
+                closeJsonImport();
+                document.getElementById('jsonImportText').value = '';
+            } catch (err) {
+                toast('Ungültiges JSON: ' + err.message, 'error');
+            }
+        }
+
+        function saveFile(format) {
+            const json = format === 'minified' ? JSON.stringify(data) : JSON.stringify(data, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1641,7 +2569,51 @@
             a.download = data.filename || 'data.json';
             a.click();
             URL.revokeObjectURL(url);
-            toast('Datei gespeichert', 'success');
+            toast('Datei gespeichert (' + format + ')', 'success');
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('active'));
+        }
+
+        function validateJson() {
+            try {
+                JSON.stringify(data);
+                toast('JSON ist gültig ✓', 'success');
+            } catch (err) {
+                toast('JSON-Fehler: ' + err.message, 'error');
+            }
+        }
+
+        function copyJson() {
+            const json = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(json).then(() => {
+                toast('JSON kopiert', 'success');
+            }).catch(() => {
+                toast('Kopieren fehlgeschlagen', 'error');
+            });
+        }
+
+        function downloadJson() {
+            saveFile('formatted');
+        }
+
+        function copyCode() {
+            const codeElement = document.getElementById('codeContent');
+            if (codeElement) {
+                navigator.clipboard.writeText(codeElement.value).then(() => {
+                    toast('Code kopiert', 'success');
+                }).catch(() => {
+                    toast('Kopieren fehlgeschlagen', 'error');
+                });
+            }
+        }
+
+        function showSettings() {
+            document.getElementById('settingAutoRenumber').checked = state.settings.autoRenumber;
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            state.settings.autoRenumber = document.getElementById('settingAutoRenumber').checked;
+            document.getElementById('settingsModal').classList.remove('active');
         }
 
         function updateCount() {
