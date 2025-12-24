@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>JSON Content Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d30;
+            --bg-hover: #37373d;
+            --bg-input: #3c3c3c;
+            --border: #3e3e42;
+            --border-active: #007acc;
+            --text-primary: #cccccc;
+            --text-secondary: #999999;
+            --text-muted: #6a6a6a;
+            
+            --color-h2: #4ec9b0;
+            --color-h3: #569cd6;
+            --color-h4: #9cdcfe;
+            --color-p: #808080;
+            --color-code: #ce9178;
+            --color-table: #b5cea8;
+            --color-info: #dcdcaa;
+            --color-list: #d7ba7d;
+            --color-quote: #6a9955;
+            --color-expandable: #c586c0;
+            
+            --success: #4ec9b0;
+            --warning: #fbbf24;
+            --error: #f87171;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 3px;
+        }
+
+        /* ==================== APP STRUCTURE ==================== */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
+            overflow: hidden;
+        }
+
+        .app-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            min-height: 44px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .header-title i {
+            color: var(--border-active);
+            font-size: 16px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 5px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+
+        .btn:active {
+            background: var(--bg-hover);
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--border-active);
+            border-color: var(--border-active);
+        }
+
+        .app-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ==================== SIDEBAR ==================== */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 35vh;
+            min-height: 200px;
+            max-height: 40vh;
+        }
+
+        .sidebar-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 6px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            background: var(--bg-input);
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 9px;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+            padding: 6px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .quick-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 2px;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            font-size: 14px;
+            transition: all 0.15s;
+        }
+
+        .quick-btn:active {
+            background: var(--bg-hover);
+            transform: scale(0.95);
+        }
+
+        .quick-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 6px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ==================== TREE ==================== */
+        .tree-section {
+            margin-bottom: 6px;
+        }
+
+        .section-header {
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            border-left: 3px solid transparent;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .section-header:active {
+            background: var(--bg-hover);
+        }
+
+        .section-header.active {
+            background: var(--bg-hover);
+            border-right: 2px solid var(--border-active);
+        }
+
+        .chevron {
+            font-size: 9px;
+            transition: transform 0.2s;
+            width: 12px;
+            text-align: center;
+        }
+
+        .chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            margin-left: 6px;
+            margin-top: 3px;
+            overflow: hidden;
+            transition: max-height 0.25s ease-out;
+        }
+
+        .section-content.collapsed {
+            max-height: 0 !important;
+        }
+
+        .tree-item {
+            padding: 7px 8px;
+            margin: 2px 0;
+            background: var(--bg-secondary);
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            border-left: 3px solid transparent;
+            transition: background 0.15s;
+        }
+
+        .tree-item:active {
+            background: var(--bg-hover);
+        }
+
+        .tree-item.active {
+            background: var(--bg-hover);
+            border-right: 2px solid var(--border-active);
+        }
+
+        .tree-icon {
+            font-size: 12px;
+            width: 14px;
+            text-align: center;
+        }
+
+        .tree-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tree-delete {
+            opacity: 0.5;
+            padding: 3px;
+            font-size: 10px;
+            color: var(--error);
+        }
+
+        /* Type colors */
+        .type-h2 { border-left-color: var(--color-h2); }
+        .type-h3 { border-left-color: var(--color-h3); }
+        .type-h4 { border-left-color: var(--color-h4); }
+        .type-p { border-left-color: var(--color-p); }
+        .type-code { border-left-color: var(--color-code); }
+        .type-table { border-left-color: var(--color-table); }
+        .type-info_box { border-left-color: var(--color-info); }
+        .type-ul, .type-ol { border-left-color: var(--color-list); }
+        .type-quote { border-left-color: var(--color-quote); }
+        .type-steps, .type-expandable { border-left-color: var(--color-expandable); }
+
+        /* ==================== EDITOR ==================== */
+        .editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-primary);
+            min-height: 0; /* Important for flex */
+        }
+
+        .editor-tabs {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-shrink: 0;
+        }
+
+        .editor-tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.15s;
+        }
+
+        .editor-tab.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--border-active);
+        }
+
+        .editor-view {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0; /* Important for flex */
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .empty-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        /* ==================== FORMS ==================== */
+        .editor-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .editor-type-icon {
+            font-size: 18px;
+        }
+
+        .editor-type-label {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px; /* Prevent zoom on iOS */
+            font-family: inherit;
+            transition: border-color 0.15s;
+            -webkit-appearance: none;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--border-active);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.5;
+        }
+
+        .form-textarea.monospace {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        /* ==================== TABLE EDITOR ==================== */
+        .table-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .editor-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-secondary);
+        }
+
+        .editor-table th,
+        .editor-table td {
+            padding: 8px;
+            border: 1px solid var(--border);
+            min-width: 100px;
+        }
+
+        .editor-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .editor-table input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 4px;
+            font-size: 13px;
+        }
+
+        .editor-table input:focus {
+            outline: 1px solid var(--border-active);
+            background: var(--bg-primary);
+        }
+
+        /* ==================== STEPS EDITOR ==================== */
+        .step-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .step-number {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .step-delete {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 4px 6px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+
+        .step-delete:active {
+            background: var(--bg-hover);
+            color: var(--error);
+        }
+
+        /* ==================== SMART IMPORT ==================== */
+        .import-info {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .import-textarea {
+            width: 100%;
+            min-height: 250px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+
+        .import-textarea:focus {
+            outline: none;
+            border-color: var(--border-active);
+        }
+
+        .import-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ==================== MODAL ==================== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+
+        .modal-close:active {
+            background: var(--bg-hover);
+        }
+
+        .modal-body {
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border);
+            padding: 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        /* ==================== DROPDOWN ==================== */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            min-width: 180px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            z-index: 100;
+        }
+
+        .dropdown.active .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            color: var(--text-primary);
+        }
+
+        .dropdown-item:active {
+            background: var(--bg-hover);
+        }
+
+        .dropdown-item i {
+            width: 14px;
+            text-align: center;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        /* ==================== TOAST ==================== */
+        .toast-container {
+            position: fixed;
+            top: 54px;
+            right: 10px;
+            left: 10px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--success);
+            border-radius: 4px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            animation: slideIn 0.3s;
+            pointer-events: auto;
+        }
+
+        .toast.error { border-left-color: var(--error); }
+        .toast.warning { border-left-color: var(--warning); }
+
+        .toast-icon {
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 11px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* ==================== UTILITIES ==================== */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Prevent pull-to-refresh */
+        body {
+            overscroll-behavior-y: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-title">
+                <i class="fas fa-code"></i>
+                <span>JSON Editor</span>
+            </div>
+            <div class="header-actions">
+                <div class="dropdown" id="importDropdown">
+                    <button class="btn" onclick="toggleDropdown()">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Import</span>
+                    </button>
+                    <div class="dropdown-menu">
+                        <button class="dropdown-item" onclick="loadFile('replace')">
+                            <i class="fas fa-file-import"></i>
+                            <span>Neu laden</span>
+                        </button>
+                        <button class="dropdown-item" onclick="loadFile('append')">
+                            <i class="fas fa-plus"></i>
+                            <span>Anhängen</span>
+                        </button>
+                        <div class="divider"></div>
+                        <button class="dropdown-item" onclick="showPositionModal()">
+                            <i class="fas fa-map-pin"></i>
+                            <span>An Position</span>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveFile()">
+                    <i class="fas fa-save"></i>
+                    <span>Speichern</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Body -->
+        <div class="app-body">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <span>Struktur</span>
+                    <span class="badge" id="itemCount">0</span>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="addItem('h2')">
+                        <i class="fas fa-heading" style="color: var(--color-h2);"></i>
+                        <span class="quick-label">H2</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('h3')">
+                        <i class="fas fa-heading" style="color: var(--color-h3);"></i>
+                        <span class="quick-label">H3</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('p')">
+                        <i class="fas fa-paragraph" style="color: var(--color-p);"></i>
+                        <span class="quick-label">Text</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('code')">
+                        <i class="fas fa-code" style="color: var(--color-code);"></i>
+                        <span class="quick-label">Code</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('table')">
+                        <i class="fas fa-table" style="color: var(--color-table);"></i>
+                        <span class="quick-label">Tabelle</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('steps')">
+                        <i class="fas fa-list-ol" style="color: var(--color-expandable);"></i>
+                        <span class="quick-label">Schritte</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('info_box')">
+                        <i class="fas fa-circle-info" style="color: var(--color-info);"></i>
+                        <span class="quick-label">Info</span>
+                    </button>
+                    <button class="quick-btn" onclick="addItem('ul')">
+                        <i class="fas fa-list" style="color: var(--color-list);"></i>
+                        <span class="quick-label">Liste</span>
+                    </button>
+                </div>
+                <div class="sidebar-content" id="tree"></div>
+            </aside>
+
+            <!-- Editor -->
+            <main class="editor">
+                <div class="editor-tabs">
+                    <button class="editor-tab active" id="tabEditor" onclick="switchTab('editor')">
+                        <i class="fas fa-pen-to-square"></i>
+                        Detail Editor
+                    </button>
+                    <button class="editor-tab" id="tabImport" onclick="switchTab('import')">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        Smart Import
+                    </button>
+                </div>
+                <div class="editor-view" id="viewEditor">
+                    <div class="empty-state">
+                        <i class="far fa-hand-point-up empty-icon"></i>
+                        <div style="font-size: 12px;">Wählen Sie ein Element<br>aus der Struktur oben</div>
+                    </div>
+                </div>
+                <div class="editor-view hidden" id="viewImport">
+                    <div class="import-info">
+                        Markdown-Text hier einfügen. Unterstützt: Überschriften (##, ###), Code-Blöcke (```), Listen (-, *)
+                    </div>
+                    <textarea class="import-textarea" id="importText" placeholder="## Neues Kapitel&#10;Text...&#10;&#10;```js&#10;code&#10;```&#10;&#10;- Liste"></textarea>
+                    <div class="import-footer">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="autoNumber" checked>
+                            <span>Auto-Nummerierung</span>
+                        </label>
+                        <button class="btn btn-primary" onclick="processImport()">
+                            <i class="fas fa-plus"></i>
+                            Hinzufügen
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Position Modal -->
+    <div class="modal-overlay" id="positionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">An Position einfügen</h3>
+                <button class="modal-close" onclick="closePositionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Position</label>
+                    <select class="form-select" id="positionSelect">
+                        <option value="start">Am Anfang</option>
+                        <option value="end">Am Ende</option>
+                        <option value="before">Vor Element</option>
+                        <option value="after">Nach Element</option>
+                        <option value="custom">Benutzerdefiniert</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="customIndexGroup">
+                    <label class="form-label">Index</label>
+                    <input type="number" class="form-input" id="customIndex" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="preserveMetadata" checked>
+                        <span>Metadaten übernehmen</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closePositionModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="executePositionImport()">Importieren</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- File Input -->
+    <input type="file" id="fileInput" accept=".json" class="hidden">
+
+    <script>
+        // Global state
+        let data = {
+            filename: 'chapter.json',
+            chapter_id: '01',
+            title: 'Neues Kapitel',
+            content: []
+        };
+
+        let state = {
+            activeIndex: -1,
+            loadMode: 'replace',
+            collapsed: new Set()
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            document.getElementById('positionSelect').addEventListener('change', e => {
+                document.getElementById('customIndexGroup').classList.toggle('hidden', e.target.value !== 'custom');
+            });
+            
+            document.addEventListener('click', e => {
+                if (!e.target.closest('.dropdown')) {
+                    document.getElementById('importDropdown').classList.remove('active');
+                }
+            });
+            
+            render();
+        });
+
+        function render() {
+            renderTree();
+            updateCount();
+        }
+
+        function renderTree() {
+            const container = document.getElementById('tree');
+            container.innerHTML = '';
+
+            if (!data.content || !data.content.length) {
+                container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:11px;">Keine Elemente vorhanden</div>';
+                return;
+            }
+
+            const sections = groupByH2();
+            sections.forEach((section, idx) => renderSection(section, idx, container));
+        }
+
+        function groupByH2() {
+            const sections = [];
+            let current = null;
+
+            data.content.forEach((item, index) => {
+                if (item.type === 'h2') {
+                    current = { header: item, headerIndex: index, items: [] };
+                    sections.push(current);
+                } else if (current) {
+                    current.items.push({ item, index });
+                } else {
+                    if (!sections.length) {
+                        sections.push({ header: { type: 'h2', text: 'Ohne Kapitel' }, headerIndex: -1, items: [] });
+                        current = sections[0];
+                    }
+                    current.items.push({ item, index });
+                }
+            });
+
+            return sections;
+        }
+
+        function renderSection(section, sectionIdx, container) {
+            const div = document.createElement('div');
+            div.className = 'tree-section';
+
+            if (section.headerIndex !== -1) {
+                const header = document.createElement('div');
+                const sectionId = 'section-' + sectionIdx;
+                const isCollapsed = state.collapsed.has(sectionId);
+                const isActive = state.activeIndex === section.headerIndex;
+
+                header.className = 'section-header type-h2' + (isActive ? ' active' : '');
+                header.innerHTML = `
+                    <i class="fas fa-chevron-down chevron ${isCollapsed ? 'collapsed' : ''}"></i>
+                    <i class="fas fa-heading"></i>
+                    <span style="flex:1">${escapeHtml(truncate(section.header.text || 'Kapitel', 30))}</span>
+                `;
+
+                header.addEventListener('click', e => {
+                    if (e.target.closest('.chevron')) {
+                        toggleSection(sectionId);
+                    } else {
+                        selectItem(section.headerIndex);
+                    }
+                });
+
+                div.appendChild(header);
+            }
+
+            const content = document.createElement('div');
+            content.id = 'section-' + sectionIdx;
+            content.className = 'section-content' + (state.collapsed.has('section-' + sectionIdx) ? ' collapsed' : '');
+            content.style.maxHeight = state.collapsed.has('section-' + sectionIdx) ? '0' : '2000px';
+
+            section.items.forEach(({ item, index }) => {
+                content.appendChild(createTreeItem(item, index));
+            });
+
+            div.appendChild(content);
+            container.appendChild(div);
+        }
+
+        function createTreeItem(item, index) {
+            const div = document.createElement('div');
+            div.className = 'tree-item type-' + item.type + (state.activeIndex === index ? ' active' : '');
+
+            div.innerHTML = `
+                <i class="${getIcon(item.type)} tree-icon"></i>
+                <span class="tree-text">${escapeHtml(getPreview(item))}</span>
+                <i class="fas fa-trash tree-delete"></i>
+            `;
+
+            div.addEventListener('click', e => {
+                e.stopPropagation();
+                if (e.target.classList.contains('fa-trash')) {
+                    deleteItem(index);
+                } else {
+                    selectItem(index);
+                }
+            });
+
+            return div;
+        }
+
+        function getIcon(type) {
+            const icons = {
+                h2: 'fas fa-heading', h3: 'fas fa-heading', h4: 'fas fa-heading',
+                p: 'fas fa-paragraph', code: 'fas fa-code', table: 'fas fa-table',
+                steps: 'fas fa-list-ol', expandable: 'fas fa-chevron-down',
+                info_box: 'fas fa-circle-info', ul: 'fas fa-list',
+                ol: 'fas fa-list-ol', quote: 'fas fa-quote-left'
+            };
+            return icons[type] || 'fas fa-file';
+        }
+
+        function getPreview(item) {
+            if (item.text) return truncate(item.text, 40);
+            if (item.title) return truncate(item.title, 40);
+            if (item.type === 'table') return 'Tabelle (' + (item.headers ? item.headers.length : 0) + ' Spalten)';
+            if (item.type === 'steps') return 'Schritte (' + (item.items ? item.items.length : 0) + ')';
+            if (item.items) return 'Liste (' + item.items.length + ')';
+            return item.type.toUpperCase();
+        }
+
+        function toggleSection(sectionId) {
+            if (state.collapsed.has(sectionId)) {
+                state.collapsed.delete(sectionId);
+            } else {
+                state.collapsed.add(sectionId);
+            }
+            renderTree();
+        }
+
+        function selectItem(index) {
+            state.activeIndex = index;
+            renderTree();
+            renderEditor(data.content[index]);
+        }
+
+        function renderEditor(item) {
+            const view = document.getElementById('viewEditor');
+            view.innerHTML = '';
+
+            const header = document.createElement('div');
+            header.className = 'editor-header';
+            header.innerHTML = `
+                <i class="${getIcon(item.type)} editor-type-icon"></i>
+                <span class="editor-type-label">${item.type.toUpperCase()}</span>
+            `;
+            view.appendChild(header);
+
+            view.appendChild(createForm(item));
+        }
+
+        function createForm(item) {
+            const container = document.createElement('div');
+
+            switch (item.type) {
+                case 'h2': case 'h3': case 'h4': case 'p': case 'quote':
+                    container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
+                    break;
+                case 'code':
+                    container.appendChild(createInput('lang', 'Sprache', item.lang || 'JavaScript'));
+                    container.appendChild(createTextArea('content', 'Code', item.content || '', 10, true));
+                    break;
+                case 'table':
+                    container.appendChild(createTableEditor(item));
+                    break;
+                case 'info_box':
+                    container.appendChild(createSelect('style', 'Stil', item.style || 'info', [
+                        { value: 'info', label: 'Info' },
+                        { value: 'success', label: 'Erfolg' },
+                        { value: 'warning', label: 'Warnung' },
+                        { value: 'error', label: 'Fehler' }
+                    ]));
+                    container.appendChild(createInput('title', 'Titel', item.title || ''));
+                    container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
+                    break;
+                case 'expandable':
+                    container.appendChild(createInput('title', 'Titel', item.title || ''));
+                    break;
+                case 'steps':
+                    container.appendChild(createStepsEditor(item));
+                    break;
+                case 'ul': case 'ol':
+                    container.appendChild(createTextArea('items', 'Einträge (einer pro Zeile)', (item.items || []).join('\n'), 6));
+                    break;
+            }
+
+            return container;
+        }
+
+        function createInput(field, label, value) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            group.innerHTML = `
+                <label class="form-label">${escapeHtml(label)}</label>
+                <input type="text" class="form-input" value="${escapeHtml(value)}">
+            `;
+            group.querySelector('input').addEventListener('input', e => updateField(field, e.target.value));
+            return group;
+        }
+
+        function createTextArea(field, label, value, rows, mono) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            group.innerHTML = `
+                <label class="form-label">${escapeHtml(label)}</label>
+                <textarea class="form-textarea ${mono ? 'monospace' : ''}" rows="${rows}">${escapeHtml(value)}</textarea>
+            `;
+            group.querySelector('textarea').addEventListener('input', e => {
+                if (field === 'items') {
+                    updateField(field, e.target.value.split('\n').filter(l => l.trim()));
+                } else {
+                    updateField(field, e.target.value);
+                }
+            });
+            return group;
+        }
+
+        function createSelect(field, label, value, options) {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            const opts = options.map(o => `<option value="${o.value}" ${o.value === value ? 'selected' : ''}>${o.label}</option>`).join('');
+            group.innerHTML = `
+                <label class="form-label">${escapeHtml(label)}</label>
+                <select class="form-select">${opts}</select>
+            `;
+            group.querySelector('select').addEventListener('change', e => updateField(field, e.target.value));
+            return group;
+        }
+
+        function createTableEditor(item) {
+            const container = document.createElement('div');
+            container.className = 'form-group';
+
+            const controls = document.createElement('div');
+            controls.className = 'table-controls';
+            controls.innerHTML = `
+                <button class="btn" id="addCol"><i class="fas fa-plus"></i> Spalte</button>
+                <button class="btn" id="addRow"><i class="fas fa-plus"></i> Zeile</button>
+            `;
+            container.appendChild(controls);
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            const table = document.createElement('table');
+            table.className = 'editor-table';
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            (item.headers || []).forEach((h, i) => {
+                const th = document.createElement('th');
+                const input = document.createElement('input');
+                input.value = h || '';
+                input.addEventListener('input', e => updateTableHeader(i, e.target.value));
+                th.appendChild(input);
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            (item.rows || []).forEach((row, ri) => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, ci) => {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.value = cell || '';
+                    input.addEventListener('input', e => updateTableCell(ri, ci, e.target.value));
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            wrapper.appendChild(table);
+            container.appendChild(wrapper);
+
+            controls.querySelector('#addCol').addEventListener('click', addTableColumn);
+            controls.querySelector('#addRow').addEventListener('click', addTableRow);
+
+            return container;
+        }
+
+        function createStepsEditor(item) {
+            const container = document.createElement('div');
+            container.className = 'form-group';
+
+            const controls = document.createElement('div');
+            controls.className = 'table-controls';
+            controls.innerHTML = '<button class="btn" id="addStep"><i class="fas fa-plus"></i> Schritt</button>';
+            container.appendChild(controls);
+
+            (item.items || []).forEach((step, i) => {
+                const div = document.createElement('div');
+                div.className = 'step-item';
+                div.innerHTML = `
+                    <div class="step-header">
+                        <span class="step-number">Schritt ${i + 1}</span>
+                        <button class="step-delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Titel</label>
+                        <input type="text" class="form-input" value="${escapeHtml(step.title || '')}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Text</label>
+                        <textarea class="form-textarea" rows="3">${escapeHtml(step.text || '')}</textarea>
+                    </div>
+                `;
+                
+                div.querySelector('input').addEventListener('input', e => updateStepField(i, 'title', e.target.value));
+                div.querySelector('textarea').addEventListener('input', e => updateStepField(i, 'text', e.target.value));
+                div.querySelector('.step-delete').addEventListener('click', () => removeStep(i));
+                
+                container.appendChild(div);
+            });
+
+            controls.querySelector('#addStep').addEventListener('click', addStep);
+            return container;
+        }
+
+        function updateField(field, value) {
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex][field] = value;
+                renderTree();
+            }
+        }
+
+        function updateTableHeader(i, value) {
+            if (state.activeIndex >= 0) data.content[state.activeIndex].headers[i] = value;
+        }
+
+        function updateTableCell(r, c, value) {
+            if (state.activeIndex >= 0) data.content[state.activeIndex].rows[r][c] = value;
+        }
+
+        function addTableColumn() {
+            if (state.activeIndex >= 0) {
+                const item = data.content[state.activeIndex];
+                item.headers.push('Neue Spalte');
+                item.rows.forEach(row => row.push(''));
+                renderEditor(item);
+            }
+        }
+
+        function addTableRow() {
+            if (state.activeIndex >= 0) {
+                const item = data.content[state.activeIndex];
+                item.rows.push(new Array(item.headers.length).fill(''));
+                renderEditor(item);
+            }
+        }
+
+        function updateStepField(i, field, value) {
+            if (state.activeIndex >= 0) data.content[state.activeIndex].items[i][field] = value;
+        }
+
+        function addStep() {
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].items.push({ title: 'Neuer Schritt', text: '' });
+                renderEditor(data.content[state.activeIndex]);
+            }
+        }
+
+        function removeStep(i) {
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].items.splice(i, 1);
+                renderEditor(data.content[state.activeIndex]);
+            }
+        }
+
+        function addItem(type) {
+            const templates = {
+                h2: { type: 'h2', text: 'Neue Überschrift H2' },
+                h3: { type: 'h3', text: 'Neue Überschrift H3' },
+                h4: { type: 'h4', text: 'Neue Überschrift H4' },
+                p: { type: 'p', text: 'Neuer Absatz' },
+                code: { type: 'code', lang: 'JavaScript', content: '// Code' },
+                table: { type: 'table', headers: ['Spalte 1', 'Spalte 2'], rows: [['', '']] },
+                steps: { type: 'steps', items: [{ title: 'Schritt 1', text: '' }] },
+                expandable: { type: 'expandable', title: 'Ausklappbar', content: [] },
+                info_box: { type: 'info_box', style: 'info', title: 'Info', text: '' },
+                ul: { type: 'ul', items: ['Punkt 1', 'Punkt 2'] },
+                ol: { type: 'ol', items: ['Punkt 1', 'Punkt 2'] },
+                quote: { type: 'quote', text: 'Zitat' }
+            };
+
+            data.content.push(templates[type]);
+            render();
+            selectItem(data.content.length - 1);
+            toast(type.toUpperCase() + ' hinzugefügt', 'success');
+        }
+
+        function deleteItem(index) {
+            if (confirm('Element löschen?')) {
+                data.content.splice(index, 1);
+                if (state.activeIndex === index) {
+                    state.activeIndex = -1;
+                    document.getElementById('viewEditor').innerHTML = '<div class="empty-state"><i class="far fa-hand-point-up empty-icon"></i><div style="font-size:12px;">Wählen Sie ein Element</div></div>';
+                }
+                render();
+                toast('Element gelöscht', 'success');
+            }
+        }
+
+        function switchTab(tab) {
+            const editorTab = document.getElementById('tabEditor');
+            const importTab = document.getElementById('tabImport');
+            const editorView = document.getElementById('viewEditor');
+            const importView = document.getElementById('viewImport');
+
+            if (tab === 'editor') {
+                editorTab.classList.add('active');
+                importTab.classList.remove('active');
+                editorView.classList.remove('hidden');
+                importView.classList.add('hidden');
+            } else {
+                editorTab.classList.remove('active');
+                importTab.classList.add('active');
+                editorView.classList.add('hidden');
+                importView.classList.remove('hidden');
+            }
+        }
+
+        function processImport() {
+            const text = document.getElementById('importText').value;
+            const autoNum = document.getElementById('autoNumber').checked;
+
+            if (!text.trim()) {
+                toast('Bitte Text eingeben', 'warning');
+                return;
+            }
+
+            const items = parseMarkdown(text, autoNum);
+            data.content.push(...items);
+            document.getElementById('importText').value = '';
+            render();
+            switchTab('editor');
+            toast(items.length + ' Elemente importiert', 'success');
+        }
+
+        function parseMarkdown(text, autoNum) {
+            const lines = text.split('\n');
+            const items = [];
+            let inCode = false, codeBuffer = [], codeLang = 'text';
+            let inList = false, listItems = [], listType = 'ul';
+
+            const flushList = () => {
+                if (listItems.length) {
+                    items.push({ type: listType, items: [...listItems] });
+                    listItems = [];
+                    inList = false;
+                }
+            };
+
+            let h2Num = getLastH2Number(), h3Num = 0;
+
+            lines.forEach(line => {
+                const trim = line.trim();
+
+                if (trim.startsWith('```')) {
+                    flushList();
+                    if (inCode) {
+                        items.push({ type: 'code', lang: codeLang, content: codeBuffer.join('\n') });
+                        codeBuffer = [];
+                        inCode = false;
+                    } else {
+                        codeLang = trim.replace('```', '') || 'text';
+                        inCode = true;
+                    }
+                    return;
+                }
+
+                if (inCode) {
+                    codeBuffer.push(line);
+                    return;
+                }
+
+                if (!trim) {
+                    flushList();
+                    return;
+                }
+
+                if (line.startsWith('## ')) {
+                    flushList();
+                    let title = line.replace('## ', '').trim();
+                    if (autoNum && !title.match(/^\d+/)) {
+                        h2Num++;
+                        h3Num = 0;
+                        title = h2Num + '. ' + title;
+                    }
+                    items.push({ type: 'h2', text: title });
+                    return;
+                }
+
+                if (line.startsWith('### ')) {
+                    flushList();
+                    let title = line.replace('### ', '').trim();
+                    if (autoNum && !title.match(/^\d+\.\d+/)) {
+                        h3Num++;
+                        title = h2Num + '.' + h3Num + ' ' + title;
+                    }
+                    items.push({ type: 'h3', text: title });
+                    return;
+                }
+
+                if (trim.startsWith('- ') || trim.startsWith('* ')) {
+                    if (!inList || listType !== 'ul') {
+                        flushList();
+                        listType = 'ul';
+                        inList = true;
+                    }
+                    listItems.push(trim.substring(2).trim());
+                    return;
+                }
+
+                if (trim.match(/^\d+\.\s/)) {
+                    if (!inList || listType !== 'ol') {
+                        flushList();
+                        listType = 'ol';
+                        inList = true;
+                    }
+                    listItems.push(trim.replace(/^\d+\.\s/, '').trim());
+                    return;
+                }
+
+                if (trim.startsWith('> ')) {
+                    flushList();
+                    items.push({ type: 'quote', text: trim.substring(2).trim() });
+                    return;
+                }
+
+                flushList();
+                items.push({ type: 'p', text: trim });
+            });
+
+            flushList();
+            return items;
+        }
+
+        function getLastH2Number() {
+            for (let i = data.content.length - 1; i >= 0; i--) {
+                if (data.content[i].type === 'h2' && data.content[i].text) {
+                    const match = data.content[i].text.match(/^(\d+)/);
+                    if (match) return parseInt(match[1]);
+                }
+            }
+            return parseInt(data.chapter_id) || 0;
+        }
+
+        function toggleDropdown() {
+            document.getElementById('importDropdown').classList.toggle('active');
+        }
+
+        function loadFile(mode) {
+            state.loadMode = mode;
+            document.getElementById('fileInput').click();
+            document.getElementById('importDropdown').classList.remove('active');
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const json = JSON.parse(ev.target.result);
+                    
+                    if (state.loadMode === 'replace') {
+                        data = json;
+                        toast('Datei geladen', 'success');
+                    } else if (state.loadMode === 'append') {
+                        if (json.content && Array.isArray(json.content)) {
+                            data.content.push(...json.content);
+                            toast(json.content.length + ' Elemente angehängt', 'success');
+                        }
+                    }
+                    
+                    state.activeIndex = -1;
+                    render();
+                    document.getElementById('viewEditor').innerHTML = '<div class="empty-state"><i class="far fa-hand-point-up empty-icon"></i><div style="font-size:12px;">Wählen Sie ein Element</div></div>';
+                } catch (err) {
+                    toast('Ungültiges JSON', 'error');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        function showPositionModal() {
+            document.getElementById('positionModal').classList.add('active');
+            document.getElementById('importDropdown').classList.remove('active');
+        }
+
+        function closePositionModal() {
+            document.getElementById('positionModal').classList.remove('active');
+        }
+
+        function executePositionImport() {
+            const position = document.getElementById('positionSelect').value;
+            const preserveMetadata = document.getElementById('preserveMetadata').checked;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    try {
+                        const json = JSON.parse(ev.target.result);
+                        
+                        if (!json.content || !Array.isArray(json.content)) {
+                            toast('JSON muss content-Array enthalten', 'error');
+                            return;
+                        }
+
+                        if (preserveMetadata) {
+                            if (json.filename) data.filename = json.filename;
+                            if (json.chapter_id) data.chapter_id = json.chapter_id;
+                            if (json.title) data.title = json.title;
+                        }
+
+                        let idx = 0;
+                        switch (position) {
+                            case 'start': idx = 0; break;
+                            case 'end': idx = data.content.length; break;
+                            case 'before': idx = state.activeIndex >= 0 ? state.activeIndex : data.content.length; break;
+                            case 'after': idx = state.activeIndex >= 0 ? state.activeIndex + 1 : data.content.length; break;
+                            case 'custom': idx = Math.max(0, Math.min(parseInt(document.getElementById('customIndex').value) || 0, data.content.length)); break;
+                        }
+
+                        data.content.splice(idx, 0, ...json.content);
+                        render();
+                        closePositionModal();
+                        toast(json.content.length + ' Elemente eingefügt', 'success');
+                    } catch (err) {
+                        toast('Fehler beim Import', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function saveFile() {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = data.filename || 'data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            toast('Datei gespeichert', 'success');
+        }
+
+        function updateCount() {
+            document.getElementById('itemCount').textContent = data.content.length;
+        }
+
+        function toast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+
+            const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+            toast.innerHTML = `
+                <i class="fas ${icon} toast-icon"></i>
+                <span class="toast-message">${escapeHtml(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function truncate(str, len) {
+            if (!str) return '';
+            return str.length > len ? str.substring(0, len) + '...' : str;
+        }
+    </script>
+</body>
+</html>
