@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON Content Editor Pro</title>
+    <title>JSON Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -695,11 +695,15 @@
 
         /* ==================== EDITABLE LISTS ==================== */
         .editable-list {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 2px;
-            padding: 6px;
-        }
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+}
 
         .editable-list-header {
             display: flex;
@@ -716,12 +720,24 @@
         }
 
         .editable-item {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 2px;
-            padding: 6px;
-            margin-bottom: 6px;
-        }
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.card-row {
+    display: flex;
+    gap: 10px;
+}
+
+.item-action:hover {
+    color: #f87171; /* Rot beim Löschen */
+}
 
         .editable-item-header {
             display: flex;
@@ -757,6 +773,12 @@
             color: var(--text-primary);
         }
 
+.list-items-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-top: 10px;
+}
         /* ==================== NESTED EDITOR ==================== */
         .nested-editor {
             background: var(--bg-secondary);
@@ -1029,7 +1051,7 @@
         <header class="toolbar">
             <div class="toolbar-brand">
                 <i class="fas fa-code"></i>
-                <span>JSON Content Editor Pro</span>
+                <span>JSON Editor</span>
             </div>
             <div class="toolbar-actions">
                 <button class="btn" onclick="showSearch()" title="Suchen (Ctrl+F)">
@@ -1837,13 +1859,16 @@
 }
 
         function createForm(item) {
-            const container = document.createElement('div');
+    const container = document.createElement('div');
+    container.className = 'editor-form-content'; // Wichtig für das Layout
 
-            switch (item.type) {
-                case 'h2': case 'h3': case 'h4': case 'p': case 'quote':
-                    container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
-                    container.appendChild(createInput('url', 'Link-URL (optional)', item.url || ''));
-                    break;
+    switch (item.type) {
+        case 'meta_cards': // NEU: Diesen Block hinzufügen
+            container.appendChild(createMetaCardsEditor(item));
+            break;
+        case 'ul': case 'ol':
+            container.appendChild(createListEditor(item));
+            break;
 
                 case 'code':
                     container.appendChild(createCodeEditor(item));
@@ -1896,6 +1921,91 @@
 
             return container;
         }
+
+
+function createMetaCardsEditor(item) {
+    const container = document.createElement('div');
+    container.className = 'editable-list';
+
+    container.innerHTML = `
+        <div class="editable-list-header">
+            <span class="editable-list-title" style="color:var(--color-info); font-weight:bold;">META CARDS</span>
+            <button class="btn btn-primary" onclick="addMetaCard()">
+                <i class="fas fa-plus"></i> Karte hinzufügen
+            </button>
+        </div>
+    `;
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'list-items-container';
+
+    if (!item.items) item.items = [];
+
+    item.items.forEach((card, i) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'editable-item';
+        cardDiv.innerHTML = `
+            <div class="editable-item-header">
+                <span style="font-size:10px; color:var(--text-muted)">KARTE ${i + 1}</span>
+                <div class="editable-item-actions">
+                    <button class="item-action" onclick="moveMetaCard(${i}, -1)"><i class="fas fa-arrow-up"></i></button>
+                    <button class="item-action" onclick="moveMetaCard(${i}, 1)"><i class="fas fa-arrow-down"></i></button>
+                    <button class="item-action" onclick="removeMetaCard(${i})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="card-row">
+                <div style="width: 60px;">
+                    <label class="form-label">Icon</label>
+                    <input type="text" class="form-input" value="${escapeHtml(card.icon)}" oninput="updateMetaCard(${i}, 'icon', this.value)">
+                </div>
+                <div style="flex: 1;">
+                    <label class="form-label">Label / Text</label>
+                    <input type="text" class="form-input" value="${escapeHtml(card.label)}" oninput="updateMetaCard(${i}, 'label', this.value)">
+                </div>
+            </div>
+        `;
+        itemsContainer.appendChild(cardDiv);
+    });
+
+    container.appendChild(itemsContainer);
+    return container;
+}
+
+// Logik-Funktionen für Meta Cards
+function addMetaCard() {
+    saveHistory();
+    const item = data.content[state.activeIndex];
+    if (!item.items) item.items = [];
+    item.items.push({ icon: "💡", label: "Neuer Inhalt" });
+    renderEditor(item);
+    renderJsonPreview();
+}
+
+function updateMetaCard(i, field, value) {
+    data.content[state.activeIndex].items[i][field] = value;
+    renderJsonPreview();
+}
+
+function removeMetaCard(i) {
+    if(confirm("Karte löschen?")) {
+        saveHistory();
+        data.content[state.activeIndex].items.splice(i, 1);
+        renderEditor(data.content[state.activeIndex]);
+        renderJsonPreview();
+    }
+}
+
+function moveMetaCard(i, dir) {
+    const items = data.content[state.activeIndex].items;
+    if (i + dir >= 0 && i + dir < items.length) {
+        saveHistory();
+        const temp = items[i];
+        items[i] = items[i+dir];
+        items[i+dir] = temp;
+        renderEditor(data.content[state.activeIndex]);
+        renderJsonPreview();
+    }
+}
 
         function createInput(field, label, value) {
             const group = document.createElement('div');
@@ -2147,27 +2257,32 @@
             return container;
         }
 
-        function createListEditor(item) {
-            const container = document.createElement('div');
-            container.className = 'editable-list';
 
-            const header = document.createElement('div');
-            header.className = 'editable-list-header';
-            header.innerHTML = `
-                <span class="editable-list-title">Listeneinträge</span>
-                <button class="btn" onclick="addListItem()">
-                    <i class="fas fa-plus"></i> Eintrag
-                </button>
-            `;
-            container.appendChild(header);
+function createListEditor(item) {
+    const container = document.createElement('div');
+    container.className = 'editable-list';
 
-            if (!item.items) item.items = [];
+    const header = document.createElement('div');
+    header.className = 'editable-list-header';
+    header.innerHTML = `
+        <span class="editable-list-title">${item.type === 'ul' ? 'Aufzählung (•)' : 'Nummerierung (1.)'}</span>
+        <button class="btn" onclick="addListItem()">
+            <i class="fas fa-plus"></i> Eintrag hinzufügen
+        </button>
+    `;
+    container.appendChild(header);
 
-            (item.items || []).forEach((listItem, i) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'editable-item';
-                itemDiv.innerHTML = `
-                    <div class="editable-item-header">
+    // NEU: Ein Container nur für die Items, damit dieser scrollt
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'list-items-container';
+
+    if (!item.items) item.items = [];
+
+    item.items.forEach((listItem, i) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'editable-item';
+        itemDiv.innerHTML = `
+            <div class="editable-item-header">
                         <span class="editable-item-number">Eintrag ${i + 1}</span>
                         <div class="editable-item-actions">
                             <button class="item-action" onclick="moveListItem(${i}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
