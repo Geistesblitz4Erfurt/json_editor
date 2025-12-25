@@ -262,6 +262,29 @@
             opacity: 1;
         }
 
+        .tree-collapse-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0;
+            margin-right: 2px;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 8px;
+            border-radius: 2px;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .tree-collapse-btn:hover {
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+
         .tree-action {
             background: transparent;
             border: none;
@@ -338,17 +361,32 @@
             transition: all 0.15s;
         }
 
+.editor-form-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+        .editor-main-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
         .editor-tab.active {
             color: var(--text-primary);
             border-bottom-color: var(--border-active);
         }
 
         .editor-view {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            position: relative;
-        }
+    height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+}
+
 
         .empty-state {
             display: flex;
@@ -496,9 +534,26 @@
             gap: 3px;
         }
 
-        .form-group {
-            margin-bottom: 10px;
-        }
+       .form-group {
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Wenn eine Form-Group den Code-Editor oder eine Liste enthält, soll sie wachsen */
+.form-group:has(.code-editor-wrapper),
+.form-group:has(.table-editor-wrapper),
+.form-group-flex {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-bottom: 0 !important;
+} ,
+.form-group:has(.editable-list) {
+    flex: 1;
+    min-height: 0;
+}
 
         .form-label {
             display: flex;
@@ -545,12 +600,15 @@
         }
 
         /* ==================== CODE EDITOR ==================== */
-        .code-editor-wrapper {
-            position: relative;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 2px;
-        }
+       .code-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    min-height: 0;
+}
 
         .code-editor-header {
             background: var(--bg-tertiary);
@@ -562,18 +620,18 @@
         }
 
         .code-editor-textarea {
-            width: 100%;
-            min-height: 250px;
-            background: var(--bg-input);
-            border: none;
-            color: var(--text-primary);
-            padding: 10px;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.6;
-            tab-size: 4;
-            resize: vertical;
-        }
+    flex: 1; /* Füllt ALLES aus */
+    width: 100%;
+    background: var(--bg-input);
+    border: none;
+    color: var(--text-primary);
+    padding: 15px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px; /* Etwas größer für bessere Lesbarkeit */
+    line-height: 1.5;
+    resize: none; /* Kein manuelles Ziehen nötig, da sie auto-füllt */
+    overflow-y: auto;
+}
 
         .code-editor-textarea:focus {
             outline: none;
@@ -1253,24 +1311,29 @@
             history: [],
             historyIndex: -1,
             searchTerm: '',
+            collapsed: new Set(),
             settings: {
                 autoRenumber: true
             }
         };
 
         const templates = [
-            { type: 'h2', label: 'H2 Überschrift', icon: 'fas fa-heading', data: { type: 'h2', text: 'Neue Überschrift' } },
-            { type: 'h3', label: 'H3 Überschrift', icon: 'fas fa-heading', data: { type: 'h3', text: 'Neue Überschrift' } },
-            { type: 'h4', label: 'H4 Überschrift', icon: 'fas fa-heading', data: { type: 'h4', text: 'Neue Überschrift' } },
-            { type: 'p', label: 'Absatz', icon: 'fas fa-paragraph', data: { type: 'p', text: 'Neuer Absatz' } },
-            { type: 'code', label: 'Code', icon: 'fas fa-code', data: { type: 'code', lang: 'javascript', content: '// Code' } },
-            { type: 'table', label: 'Tabelle', icon: 'fas fa-table', data: { type: 'table', headers: ['Spalte 1', 'Spalte 2'], rows: [['', '']] } },
-            { type: 'steps', label: 'Schritte', icon: 'fas fa-list-ol', data: { type: 'steps', items: [{ title: 'Schritt 1', text: '' }] } },
-            { type: 'ul', label: 'Liste (ul)', icon: 'fas fa-list', data: { type: 'ul', items: ['Punkt 1', 'Punkt 2'] } },
-            { type: 'ol', label: 'Liste (ol)', icon: 'fas fa-list-ol', data: { type: 'ol', items: ['Punkt 1', 'Punkt 2'] } },
-            { type: 'info_box', label: 'Info-Box', icon: 'fas fa-circle-info', data: { type: 'info_box', style: 'info', title: 'Info', text: '' } },
-            { type: 'quote', label: 'Zitat', icon: 'fas fa-quote-left', data: { type: 'quote', text: 'Zitat' } },
-            { type: 'expandable', label: 'Ausklappbar', icon: 'fas fa-chevron-down', data: { type: 'expandable', title: 'Titel', content: [] } }
+            { type: 'h2', label: 'H2 Überschrift', icon: 'fas fa-heading', data: { type: 'h2', text: 'Neue Überschrift', url: '' } },
+            { type: 'h3', label: 'H3 Überschrift', icon: 'fas fa-heading', data: { type: 'h3', text: 'Neue Überschrift', url: '' } },
+            { type: 'h4', label: 'H4 Überschrift', icon: 'fas fa-heading', data: { type: 'h4', text: 'Neue Überschrift', url: '' } },
+            { type: 'p', label: 'Absatz', icon: 'fas fa-paragraph', data: { type: 'p', text: 'Neuer Absatz', url: '' } },
+            { type: 'code', label: 'Code', icon: 'fas fa-code', data: { type: 'code', lang: 'javascript', content: '// Code', url: '' } },
+            { type: 'table', label: 'Tabelle', icon: 'fas fa-table', data: { type: 'table', headers: ['Spalte 1', 'Spalte 2'], rows: [['', '']], url: '' } },
+            { type: 'steps', label: 'Schritte', icon: 'fas fa-list-ol', data: { type: 'steps', items: [{ title: 'Schritt 1', text: '' }], url: '' } },
+            { type: 'ul', label: 'Liste (ul)', icon: 'fas fa-list', data: { type: 'ul', items: ['Punkt 1', 'Punkt 2'], url: '' } },
+            { type: 'ol', label: 'Liste (ol)', icon: 'fas fa-list-ol', data: { type: 'ol', items: ['Punkt 1', 'Punkt 2'], url: '' } },
+            { type: 'info_box', label: 'Info-Box', icon: 'fas fa-circle-info', data: { type: 'info_box', style: 'info', title: 'Info', text: '', url: '' } },
+            { type: 'quote', label: 'Zitat', icon: 'fas fa-quote-left', data: { type: 'quote', text: 'Zitat', url: '' } },
+            { type: 'expandable', label: 'Ausklappbar', icon: 'fas fa-chevron-down', data: { type: 'expandable', title: 'Titel', content: [], url: '' } },
+            { type: 'image', label: 'Bild', icon: 'fas fa-image', data: { type: 'image', src: '', alt: '', caption: '', align: 'center', url: '' } },
+            { type: 'video', label: 'Video', icon: 'fas fa-video', data: { type: 'video', url: '', caption: '', link_url: '' } },
+            { type: 'gallery', label: 'Galerie', icon: 'fas fa-images', data: { type: 'gallery', images: [], layout: 'grid', columns: 3, spacing: 'medium', url: '' } },
+            { type: 'embed', label: 'Embed', icon: 'fas fa-code', data: { type: 'embed', html: '', caption: '', url: '' } }
         ];
 
         // Initialize
@@ -1500,31 +1563,37 @@
 
         // Renumbering
         function renumberHeadings() {
-            if (!state.settings.autoRenumber) return;
+    if (!state.settings.autoRenumber) return;
 
-            let h2Num = 0, h3Num = 0, h4Num = 0;
-            
-            for (let i = 0; i < data.content.length; i++) {
-                const item = data.content[i];
-                
-                if (item.type === 'h2' && item.text) {
-                    h2Num++;
-                    h3Num = 0;
-                    h4Num = 0;
-                    const text = item.text.replace(/^\d+\.\s*/, '');
-                    item.text = h2Num + '. ' + text;
-                } else if (item.type === 'h3' && item.text) {
-                    h3Num++;
-                    h4Num = 0;
-                    const text = item.text.replace(/^\d+\.\d+\.\s*/, '');
-                    item.text = h2Num + '.' + h3Num + ' ' + text;
-                } else if (item.type === 'h4' && item.text) {
-                    h4Num++;
-                    const text = item.text.replace(/^\d+\.\d+\.\d+\.\s*/, '');
-                    item.text = h2Num + '.' + h3Num + '.' + h4Num + ' ' + text;
-                }
-            }
+    let h2Num = 0, h3Num = 0, h4Num = 0;
+
+    for (let i = 0; i < data.content.length; i++) {
+        const item = data.content[i];
+
+        // Diese Regex entfernt ALLE führenden Zahlen und Punkte (z.B. "1.2.3. Text" -> "Text")
+        const cleanText = (text) => {
+            if (!text) return '';
+            return text.replace(/^[\d.\s]+/, '').trim();
+        };
+
+        if (item.type === 'h2') {
+            h2Num++;
+            h3Num = 0;
+            h4Num = 0;
+            const textOnly = cleanText(item.text);
+            item.text = h2Num + '. ' + textOnly;
+        } else if (item.type === 'h3') {
+            h3Num++;
+            h4Num = 0;
+            const textOnly = cleanText(item.text);
+            item.text = h2Num + '.' + h3Num + ' ' + textOnly;
+        } else if (item.type === 'h4') {
+            h4Num++;
+            const textOnly = cleanText(item.text);
+            item.text = h2Num + '.' + h3Num + '.' + h4Num + ' ' + textOnly;
         }
+    }
+}
 
         // Render Functions
         function render() {
@@ -1542,16 +1611,38 @@
                 return;
             }
 
+            let currentH2Index = -1;
             let currentLevel = 0;
+            
             data.content.forEach((item, index) => {
                 if (state.searchTerm && !matchesSearch(item)) return;
                 
-                if (item.type === 'h2') currentLevel = 0;
-                else if (item.type === 'h3') currentLevel = 1;
-                else if (item.type === 'h4') currentLevel = 2;
+                // Track current H2 for collapsing
+                if (item.type === 'h2') {
+                    currentH2Index = index;
+                    currentLevel = 0;
+                } else if (item.type === 'h3') {
+                    currentLevel = 1;
+                } else if (item.type === 'h4') {
+                    currentLevel = 2;
+                }
                 
-                container.appendChild(createTreeItem(item, index, currentLevel));
+                // Hide children if parent H2 is collapsed
+                const isCollapsed = currentH2Index >= 0 && state.collapsed.has(currentH2Index) && item.type !== 'h2';
+                
+                if (!isCollapsed) {
+                    container.appendChild(createTreeItem(item, index, currentLevel, currentH2Index));
+                }
             });
+        }
+
+        function toggleCollapse(index) {
+            if (state.collapsed.has(index)) {
+                state.collapsed.delete(index);
+            } else {
+                state.collapsed.add(index);
+            }
+            renderTree();
         }
 
         function matchesSearch(item) {
@@ -1563,14 +1654,21 @@
             return false;
         }
 
-        function createTreeItem(item, index, level) {
+        function createTreeItem(item, index, level, parentH2Index) {
             const div = document.createElement('div');
             div.className = 'tree-item type-' + item.type + (state.activeIndex === index ? ' active' : '');
             div.dataset.index = index;
 
             const indent = level > 0 ? '<span class="tree-item-indent" style="width:' + (level * 12) + 'px;"></span>' : '';
+            
+            // Add collapse button for H2 items
+            const collapseBtn = item.type === 'h2' ? 
+                `<button class="tree-collapse-btn" onclick="toggleCollapse(${index}); event.stopPropagation();" title="${state.collapsed.has(index) ? 'Ausklappen' : 'Einklappen'}">
+                    <i class="fas fa-chevron-${state.collapsed.has(index) ? 'right' : 'down'}"></i>
+                </button>` : '';
 
             div.innerHTML = `
+                ${collapseBtn}
                 ${indent}
                 <i class="${getIcon(item.type)} tree-icon"></i>
                 <span class="tree-text">${escapeHtml(getPreview(item))}</span>
@@ -1589,7 +1687,7 @@
             actions[3].addEventListener('click', e => { e.stopPropagation(); deleteItem(index); });
 
             div.addEventListener('click', e => {
-                if (!e.target.closest('.tree-action')) selectItem(index);
+                if (!e.target.closest('.tree-action') && !e.target.closest('.tree-collapse-btn')) selectItem(index);
             });
 
             return div;
@@ -1626,19 +1724,26 @@
                 p: 'fas fa-paragraph', code: 'fas fa-code', table: 'fas fa-table',
                 steps: 'fas fa-list-ol', expandable: 'fas fa-chevron-down',
                 info_box: 'fas fa-circle-info', ul: 'fas fa-list',
-                ol: 'fas fa-list-ol', quote: 'fas fa-quote-left'
+                ol: 'fas fa-list-ol', quote: 'fas fa-quote-left',
+                image: 'fas fa-image', video: 'fas fa-video',
+                gallery: 'fas fa-images', embed: 'fas fa-code'
             };
             return icons[type] || 'fas fa-file';
         }
 
         function getPreview(item) {
-            if (item.text) return truncate(item.text, 30);
-            if (item.title) return truncate(item.title, 30);
-            if (item.type === 'table') return 'Tabelle (' + (item.headers?.length || 0) + ' Spalten)';
-            if (item.type === 'steps') return 'Schritte (' + (item.items?.length || 0) + ')';
-            if (item.items) return 'Liste (' + item.items.length + ')';
-            return item.type.toUpperCase();
-        }
+    if (item.text) return item.text;
+    if (item.title) return item.title;
+
+    if (item.type === 'table') return 'Tabelle (' + (item.headers?.length || 0) + ' Spalten)';
+    if (item.type === 'steps') return 'Schritte (' + (item.items?.length || 0) + ')';
+    if (item.items) return 'Liste (' + item.items.length + ')';
+    if (item.type === 'image') return item.alt || item.src || 'Bild';
+    if (item.type === 'video') return item.caption || item.url || 'Video';
+    if (item.type === 'gallery') return 'Galerie (' + (item.images?.length || 0) + ' Bilder)';
+    if (item.type === 'embed') return item.caption || 'Embed';
+    return item.type.toUpperCase();
+}
 
         // Item Operations
         function selectItem(index) {
@@ -1698,27 +1803,38 @@
 
         // Editor Rendering
         function renderEditor(item) {
-            const view = document.getElementById('viewEditor');
-            view.innerHTML = '';
+    const view = document.getElementById('viewEditor');
+    view.innerHTML = '';
 
-            const header = document.createElement('div');
-            header.className = 'editor-header';
-            header.innerHTML = `
-                <div class="editor-title">
-                    <i class="${getIcon(item.type)} editor-type-icon"></i>
-                    <span class="editor-type-label">${item.type.toUpperCase()}</span>
-                </div>
-                <div class="editor-header-actions">
-                    <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
-                    <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
-                    <button class="btn btn-icon" onclick="duplicateItem(${state.activeIndex})" title="Duplizieren"><i class="fas fa-copy"></i></button>
-                    ${(item.type === 'code' || item.type === 'table') ? '<button class="btn btn-icon" onclick="openFullscreen(data.content['+state.activeIndex+'])" title="Vollbild (F11)"><i class="fas fa-expand"></i></button>' : ''}
-                    <button class="btn btn-icon" onclick="deleteItem(${state.activeIndex})" title="Löschen"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
-            view.appendChild(header);
-            view.appendChild(createForm(item));
-        }
+    // Wir erstellen einen festen Container, der Flexbox erzwingt
+    const mainContainer = document.createElement('div');
+    mainContainer.className = 'editor-main-container';
+
+    const header = document.createElement('div');
+    header.className = 'editor-header';
+    header.innerHTML = `
+        <div class="editor-title">
+            <i class="${getIcon(item.type)} editor-type-icon"></i>
+            <span class="editor-type-label">${item.type.toUpperCase()}</span>
+        </div>
+        <div class="editor-header-actions">
+            <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
+            <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
+            <button class="btn btn-icon" onclick="duplicateItem(${state.activeIndex})" title="Duplizieren"><i class="fas fa-copy"></i></button>
+            ${(item.type === 'code' || item.type === 'table') ? '<button class="btn btn-icon" onclick="openFullscreen(data.content['+state.activeIndex+'])" title="Vollbild (F11)"><i class="fas fa-expand"></i></button>' : ''}
+            <button class="btn btn-icon" onclick="deleteItem(${state.activeIndex})" title="Löschen"><i class="fas fa-trash"></i></button>
+        </div>
+    `;
+
+    mainContainer.appendChild(header);
+
+    // Das Formular erhält eine spezielle Klasse zum Wachsen
+    const formContent = createForm(item);
+    formContent.className = 'editor-form-content';
+
+    mainContainer.appendChild(formContent);
+    view.appendChild(mainContainer);
+}
 
         function createForm(item) {
             const container = document.createElement('div');
@@ -1726,6 +1842,7 @@
             switch (item.type) {
                 case 'h2': case 'h3': case 'h4': case 'p': case 'quote':
                     container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
+                    container.appendChild(createInput('url', 'Link-URL (optional)', item.url || ''));
                     break;
 
                 case 'code':
@@ -1758,6 +1875,22 @@
 
                 case 'ul': case 'ol':
                     container.appendChild(createListEditor(item));
+                    break;
+
+                case 'image':
+                    container.appendChild(createImageEditor(item));
+                    break;
+
+                case 'video':
+                    container.appendChild(createVideoEditor(item));
+                    break;
+
+                case 'gallery':
+                    container.appendChild(createGalleryEditor(item));
+                    break;
+
+                case 'embed':
+                    container.appendChild(createEmbedEditor(item));
                     break;
             }
 
@@ -2237,6 +2370,190 @@
             }
         }
 
+        // NEW: Image Editor
+        function createImageEditor(item) {
+            const container = document.createElement('div');
+            container.appendChild(createInput('src', 'Bild-URL', item.src || ''));
+            container.appendChild(createInput('alt', 'Alt-Text (Barrierefreiheit)', item.alt || ''));
+            container.appendChild(createInput('caption', 'Bildunterschrift', item.caption || ''));
+            container.appendChild(createSelect('align', 'Ausrichtung', item.align || 'center', [
+                { value: 'left', label: 'Links' },
+                { value: 'center', label: 'Zentriert' },
+                { value: 'right', label: 'Rechts' },
+                { value: 'full', label: 'Volle Breite' }
+            ]));
+            container.appendChild(createInput('width', 'Breite (optional)', item.width || ''));
+            container.appendChild(createInput('url', 'Link-URL (optional)', item.url || ''));
+            return container;
+        }
+
+        // NEW: Video Editor
+        function createVideoEditor(item) {
+            const container = document.createElement('div');
+            container.appendChild(createInput('url', 'Video-URL', item.url || ''));
+            container.appendChild(createInput('caption', 'Beschreibung', item.caption || ''));
+            container.appendChild(createInput('link_url', 'Link-URL (optional)', item.link_url || ''));
+            
+            const autoplayGroup = document.createElement('div');
+            autoplayGroup.className = 'form-checkbox';
+            autoplayGroup.innerHTML = `
+                <input type="checkbox" id="videoAutoplay" ${item.autoplay ? 'checked' : ''}>
+                <label for="videoAutoplay">Autoplay</label>
+            `;
+            autoplayGroup.querySelector('input').addEventListener('change', e => updateField('autoplay', e.target.checked));
+            container.appendChild(autoplayGroup);
+
+            const loopGroup = document.createElement('div');
+            loopGroup.className = 'form-checkbox';
+            loopGroup.innerHTML = `
+                <input type="checkbox" id="videoLoop" ${item.loop ? 'checked' : ''}>
+                <label for="videoLoop">Loop (Wiederholung)</label>
+            `;
+            loopGroup.querySelector('input').addEventListener('change', e => updateField('loop', e.target.checked));
+            container.appendChild(loopGroup);
+
+            return container;
+        }
+
+        // NEW: Gallery Editor
+        function createGalleryEditor(item) {
+            const container = document.createElement('div');
+            
+            // Gallery Layout Options
+            const layoutGroup = document.createElement('div');
+            layoutGroup.innerHTML = '<h4 style="margin:10px 0 8px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;">Galerie-Layout</h4>';
+            container.appendChild(layoutGroup);
+            
+            container.appendChild(createSelect('layout', 'Layout-Typ', item.layout || 'grid', [
+                { value: 'grid', label: 'Raster (Grid)' },
+                { value: 'masonry', label: 'Mauerwerk (Masonry)' },
+                { value: 'carousel', label: 'Karussell (Carousel)' },
+                { value: 'horizontal', label: 'Horizontal' }
+            ]));
+            
+            container.appendChild(createSelect('columns', 'Spalten', item.columns || 3, [
+                { value: 1, label: '1 Spalte' },
+                { value: 2, label: '2 Spalten' },
+                { value: 3, label: '3 Spalten' },
+                { value: 4, label: '4 Spalten' },
+                { value: 5, label: '5 Spalten' }
+            ]));
+            
+            container.appendChild(createSelect('spacing', 'Abstand', item.spacing || 'medium', [
+                { value: 'none', label: 'Kein Abstand' },
+                { value: 'small', label: 'Klein' },
+                { value: 'medium', label: 'Mittel' },
+                { value: 'large', label: 'Groß' }
+            ]));
+            
+            container.appendChild(createInput('url', 'Link-URL (optional)', item.url || ''));
+
+            // Images List
+            const listContainer = document.createElement('div');
+            listContainer.className = 'editable-list';
+            listContainer.style.marginTop = '15px';
+
+            const header = document.createElement('div');
+            header.className = 'editable-list-header';
+            header.innerHTML = `
+                <span class="editable-list-title">Galerie-Bilder</span>
+                <button class="btn" onclick="addGalleryImage()"><i class="fas fa-plus"></i> Bild</button>
+            `;
+            listContainer.appendChild(header);
+
+            if (!item.images) item.images = [];
+
+            (item.images || []).forEach((img, i) => {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'editable-item';
+                imgDiv.innerHTML = `
+                    <div class="editable-item-header">
+                        <span class="editable-item-number">Bild ${i + 1}</span>
+                        <div class="editable-item-actions">
+                            <button class="item-action" onclick="moveGalleryImage(${i}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
+                            <button class="item-action" onclick="moveGalleryImage(${i}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
+                            <button class="item-action" onclick="removeGalleryImage(${i})" title="Löschen"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bild-URL</label>
+                        <input type="text" class="form-input" value="${escapeHtml(img.src || '')}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alt-Text</label>
+                        <input type="text" class="form-input" value="${escapeHtml(img.alt || '')}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bildunterschrift</label>
+                        <input type="text" class="form-input" value="${escapeHtml(img.caption || '')}">
+                    </div>
+                `;
+                
+                const inputs = imgDiv.querySelectorAll('input');
+                inputs[0].addEventListener('input', e => updateGalleryImage(i, 'src', e.target.value));
+                inputs[1].addEventListener('input', e => updateGalleryImage(i, 'alt', e.target.value));
+                inputs[2].addEventListener('input', e => updateGalleryImage(i, 'caption', e.target.value));
+                
+                listContainer.appendChild(imgDiv);
+            });
+
+            container.appendChild(listContainer);
+            return container;
+        }
+
+        function addGalleryImage() {
+            saveHistory();
+            if (state.activeIndex >= 0) {
+                const item = data.content[state.activeIndex];
+                if (!item.images) item.images = [];
+                item.images.push({ src: '', alt: '', caption: '' });
+                renderEditor(item);
+                renderJsonPreview();
+                toast('Bild hinzugefügt', 'success');
+            }
+        }
+
+        function updateGalleryImage(i, field, value) {
+            if (state.activeIndex >= 0) {
+                data.content[state.activeIndex].images[i][field] = value;
+                renderJsonPreview();
+            }
+        }
+
+        function moveGalleryImage(i, direction) {
+            if (state.activeIndex >= 0) {
+                saveHistory();
+                const item = data.content[state.activeIndex];
+                const newIndex = i + direction;
+                if (newIndex >= 0 && newIndex < item.images.length) {
+                    const temp = item.images[i];
+                    item.images[i] = item.images[newIndex];
+                    item.images[newIndex] = temp;
+                    renderEditor(item);
+                    renderJsonPreview();
+                }
+            }
+        }
+
+        function removeGalleryImage(i) {
+            if (confirm('Bild wirklich löschen?')) {
+                saveHistory();
+                data.content[state.activeIndex].images.splice(i, 1);
+                renderEditor(data.content[state.activeIndex]);
+                renderJsonPreview();
+                toast('Bild gelöscht', 'success');
+            }
+        }
+
+        // NEW: Embed Editor
+        function createEmbedEditor(item) {
+            const container = document.createElement('div');
+            container.appendChild(createTextArea('html', 'Embed-Code (HTML/iframe)', item.html || '', 6));
+            container.appendChild(createInput('caption', 'Beschreibung (optional)', item.caption || ''));
+            container.appendChild(createInput('url', 'Link-URL (optional)', item.url || ''));
+            return container;
+        }
+
         // Fullscreen
         function openFullscreen(item) {
             const overlay = document.getElementById('fullscreenOverlay');
@@ -2246,22 +2563,22 @@
             title.textContent = item.type.toUpperCase() + ' - Vollbild-Editor';
             
             if (item.type === 'code') {
-                content.innerHTML = `
-                    <div class="code-editor-wrapper" style="max-width:1400px;margin:0 auto;">
-                        <div class="code-editor-header">
-                            <select class="form-select" style="width:auto;" id="fullscreenCodeLang">
-                                <option value="javascript" ${item.lang === 'javascript' ? 'selected' : ''}>JavaScript</option>
-                                <option value="python" ${item.lang === 'python' ? 'selected' : ''}>Python</option>
-                                <option value="html" ${item.lang === 'html' ? 'selected' : ''}>HTML</option>
-                                <option value="css" ${item.lang === 'css' ? 'selected' : ''}>CSS</option>
-                                <option value="json" ${item.lang === 'json' ? 'selected' : ''}>JSON</option>
-                                <option value="sql" ${item.lang === 'sql' ? 'selected' : ''}>SQL</option>
-                                <option value="bash" ${item.lang === 'bash' ? 'selected' : ''}>Bash</option>
-                            </select>
-                        </div>
-                        <textarea class="code-editor-textarea" id="fullscreenCodeContent" style="min-height:calc(100vh - 150px);">${escapeHtml(item.content || '')}</textarea>
-                    </div>
-                `;
+    content.innerHTML = `
+        <div class="code-editor-wrapper" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+            <div class="code-editor-header">
+                <select class="form-select" style="width:auto;" id="fullscreenCodeLang">
+                    <option value="javascript" ${item.lang === 'javascript' ? 'selected' : ''}>JavaScript</option>
+                    <option value="python" ${item.lang === 'python' ? 'selected' : ''}>Python</option>
+                    <option value="html" ${item.lang === 'html' ? 'selected' : ''}>HTML</option>
+                    <option value="css" ${item.lang === 'css' ? 'selected' : ''}>CSS</option>
+                    <option value="json" ${item.lang === 'json' ? 'selected' : ''}>JSON</option>
+                    <option value="sql" ${item.lang === 'sql' ? 'selected' : ''}>SQL</option>
+                    <option value="bash" ${item.lang === 'bash' ? 'selected' : ''}>Bash</option>
+                </select>
+            </div>
+            <textarea class="code-editor-textarea" id="fullscreenCodeContent" style="flex: 1; min-height: calc(100vh - 120px); width: 100%; resize: none;"></textarea>
+        </div>
+    `;
                 
                 content.querySelector('#fullscreenCodeLang').addEventListener('change', e => {
                     item.lang = e.target.value;
@@ -2440,12 +2757,21 @@
             const reader = new FileReader();
             reader.onload = ev => {
                 try {
-                    const json = JSON.parse(ev.target.result);
+                    let json = JSON.parse(ev.target.result);
+                    
+                    // FIXED: Accept both [] and {content: []} formats
+                    if (Array.isArray(json)) {
+                        json = { content: json };
+                    }
+                    if (!json.content) {
+                        json.content = [];
+                    }
+                    
                     saveHistory();
                     
                     if (state.loadMode === 'replace') {
                         data = json;
-                        toast('Datei geladen', 'success');
+                        toast('Datei geladen (' + json.content.length + ' Elemente)', 'success');
                     } else if (state.loadMode === 'append') {
                         if (json.content && Array.isArray(json.content)) {
                             data.content.push(...json.content);
