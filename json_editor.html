@@ -366,8 +366,10 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    gap: 15px;
 }
         .editor-main-container {
+    background-color: var(--bg-secondary);
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -380,12 +382,24 @@
         }
 
         .editor-view {
+    background-color: var(--bg-secondary);
     height: calc(100vh - 70px);
     display: flex;
     flex-direction: column;
-    padding: 12px;
+    padding: 15px;
     overflow: hidden;
 }
+
+.form-textarea,
+.code-editor-textarea,
+.form-input,
+.form-select {
+    background-color: var(--bg-input) !important; 
+    color: var(--text-primary) !important;      
+    border: 1px solid var(--border) !important;  
+}
+
+
 
 
         .empty-state {
@@ -535,9 +549,9 @@
         }
 
        .form-group {
-    margin-bottom: 10px;
     display: flex;
     flex-direction: column;
+    margin-bottom: 0;
 }
 
 /* Wenn eine Form-Group den Code-Editor oder eine Liste enthält, soll sie wachsen */
@@ -550,10 +564,14 @@
     min-height: 0;
     margin-bottom: 0 !important;
 } ,
+.form-group.grow,
+.form-group:has(textarea),
+.form-group:has(.code-editor-wrapper),
 .form-group:has(.editable-list) {
     flex: 1;
     min-height: 0;
 }
+
 
         .form-label {
             display: flex;
@@ -589,10 +607,17 @@
         }
 
         .form-textarea {
-            resize: vertical;
-            min-height: 80px;
-            line-height: 1.4;
-        }
+    flex: 1;
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+}
 
         .form-textarea.monospace {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -620,17 +645,9 @@
         }
 
         .code-editor-textarea {
-    flex: 1; /* Füllt ALLES aus */
+    flex: 1;
     width: 100%;
-    background: var(--bg-input);
-    border: none;
-    color: var(--text-primary);
-    padding: 15px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px; /* Etwas größer für bessere Lesbarkeit */
-    line-height: 1.5;
-    resize: none; /* Kein manuelles Ziehen nötig, da sie auto-füllt */
-    overflow-y: auto;
+    resize: none !important;
 }
 
         .code-editor-textarea:focus {
@@ -774,6 +791,7 @@
         }
 
 .list-items-container {
+    background-color: transparent;
     flex: 1;
     overflow-y: auto;
     padding-right: 8px;
@@ -1828,7 +1846,6 @@
     const view = document.getElementById('viewEditor');
     view.innerHTML = '';
 
-    // Wir erstellen einen festen Container, der Flexbox erzwingt
     const mainContainer = document.createElement('div');
     mainContainer.className = 'editor-main-container';
 
@@ -1840,87 +1857,89 @@
             <span class="editor-type-label">${item.type.toUpperCase()}</span>
         </div>
         <div class="editor-header-actions">
-            <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, -1)" title="Nach oben"><i class="fas fa-arrow-up"></i></button>
-            <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, 1)" title="Nach unten"><i class="fas fa-arrow-down"></i></button>
-            <button class="btn btn-icon" onclick="duplicateItem(${state.activeIndex})" title="Duplizieren"><i class="fas fa-copy"></i></button>
-            ${(item.type === 'code' || item.type === 'table') ? '<button class="btn btn-icon" onclick="openFullscreen(data.content['+state.activeIndex+'])" title="Vollbild (F11)"><i class="fas fa-expand"></i></button>' : ''}
-            <button class="btn btn-icon" onclick="deleteItem(${state.activeIndex})" title="Löschen"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, -1)"><i class="fas fa-arrow-up"></i></button>
+            <button class="btn btn-icon" onclick="moveItem(${state.activeIndex}, 1)"><i class="fas fa-arrow-down"></i></button>
+            <button class="btn btn-icon" onclick="duplicateItem(${state.activeIndex})"><i class="fas fa-copy"></i></button>
+            <button class="btn btn-icon" onclick="deleteItem(${state.activeIndex})"><i class="fas fa-trash"></i></button>
         </div>
     `;
 
     mainContainer.appendChild(header);
-
-    // Das Formular erhält eine spezielle Klasse zum Wachsen
-    const formContent = createForm(item);
-    formContent.className = 'editor-form-content';
-
-    mainContainer.appendChild(formContent);
+    mainContainer.appendChild(createForm(item));
     view.appendChild(mainContainer);
 }
 
         function createForm(item) {
     const container = document.createElement('div');
-    container.className = 'editor-form-content'; // Wichtig für das Layout
+    container.className = 'editor-form-content';
 
     switch (item.type) {
-        case 'meta_cards': // NEU: Diesen Block hinzufügen
+        case 'h2': case 'h3': case 'h4': case 'p': case 'quote':
+            // Diese Typen bestehen primär aus Text, also lassen wir das Textfeld wachsen
+            container.appendChild(createTextArea('text', 'Inhalt / Text', item.text || ''));
+            container.appendChild(createInput('url', 'Link-URL (optional)', item.url || ''));
+            break;
+
+        case 'code':
+            container.appendChild(createCodeEditor(item));
+            break;
+
+        case 'meta_cards':
             container.appendChild(createMetaCardsEditor(item));
             break;
+
         case 'ul': case 'ol':
             container.appendChild(createListEditor(item));
             break;
 
-                case 'code':
-                    container.appendChild(createCodeEditor(item));
-                    break;
+        case 'info_box':
+            container.appendChild(createSelect('style', 'Stil', item.style || 'info', [
+                { value: 'info', label: 'Info' }, { value: 'success', label: 'Erfolg' },
+                { value: 'warning', label: 'Warnung' }, { value: 'error', label: 'Fehler' }
+            ]));
+            container.appendChild(createInput('title', 'Titel', item.title || ''));
+            container.appendChild(createTextArea('text', 'Inhalt', item.text || ''));
+            break;
 
-                case 'table':
-                    container.appendChild(createTableEditor(item));
-                    break;
+        case 'table':
+            container.appendChild(createTableEditor(item));
+            break;
 
-                case 'info_box':
-                    container.appendChild(createSelect('style', 'Stil', item.style || 'info', [
-                        { value: 'info', label: 'Info' },
-                        { value: 'success', label: 'Erfolg' },
-                        { value: 'warning', label: 'Warnung' },
-                        { value: 'error', label: 'Fehler' }
-                    ]));
-                    container.appendChild(createInput('title', 'Titel', item.title || ''));
-                    container.appendChild(createTextArea('text', 'Text', item.text || '', 4));
-                    break;
+        case 'steps':
+            container.appendChild(createStepsEditor(item));
+            break;
 
-                case 'expandable':
-                    container.appendChild(createInput('title', 'Titel', item.title || ''));
-                    container.appendChild(createNestedEditor(item));
-                    break;
+        case 'image':
+            container.appendChild(createImageEditor(item));
+            break;
 
-                case 'steps':
-                    container.appendChild(createStepsEditor(item));
-                    break;
+        case 'gallery':
+            container.appendChild(createGalleryEditor(item));
+            break;
 
-                case 'ul': case 'ol':
-                    container.appendChild(createListEditor(item));
-                    break;
+        case 'video':
+            container.appendChild(createVideoEditor(item));
+            break;
 
-                case 'image':
-                    container.appendChild(createImageEditor(item));
-                    break;
+        case 'embed':
+            container.appendChild(createEmbedEditor(item));
+            break;
+    }
 
-                case 'video':
-                    container.appendChild(createVideoEditor(item));
-                    break;
+    return container;
+}
 
-                case 'gallery':
-                    container.appendChild(createGalleryEditor(item));
-                    break;
 
-                case 'embed':
-                    container.appendChild(createEmbedEditor(item));
-                    break;
-            }
-
-            return container;
-        }
+function createTextArea(field, label, value) {
+    const group = document.createElement('div');
+    group.className = 'form-group grow'; // Die Klasse "grow" sorgt für volle Höhe
+    group.innerHTML = `
+        <label class="form-label">${escapeHtml(label)}</label>
+        <textarea class="form-textarea" spellcheck="false">${escapeHtml(value)}</textarea>
+    `;
+    group.querySelector('textarea').addEventListener('input', e => updateField(field, e.target.value));
+    return group;
+}
 
 
 function createMetaCardsEditor(item) {
